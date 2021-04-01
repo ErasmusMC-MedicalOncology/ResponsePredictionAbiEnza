@@ -57,17 +57,3 @@ SummarizedExperiment::rowData(DESeq2Counts.AbiEnza)$ENSEMBL <- BiocGenerics::row
 SummarizedExperiment::rowData(DESeq2Counts.AbiEnza) <- tibble::as_tibble(SummarizedExperiment::rowData(DESeq2Counts.AbiEnza)) %>% dplyr::left_join(tibble::as_tibble(S4Vectors::mcols(R2CPCT::GENCODE.v35)) %>% dplyr::distinct(SYMBOL, ENSEMBL), by = 'ENSEMBL')
 
 save(DESeq2Counts.AbiEnza, file = '/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/RData/DESeq2Counts.AbiEnza.RData')
-
-
-# Perform DESeq2 ----------------------------------------------------------
-
-DESeq2.AbiEnza <- DESeq2::DESeq(DESeq2Counts.AbiEnza, test = 'Wald', parallel = T, BPPARAM = BiocParallel::MulticoreParam(workers = 20))
-
-# Retrieve the results. (Poor vs. Good responders)
-DESeq2.AbiEnza.Results <- R2CPCT::retrieveDESeq2Results(DESeq2.AbiEnza, contrast = c('responderCategory.DESeq2', 'Poor', 'Good'))
-
-# Retrieve Diff. Exprs. genes (DE).
-DESeq2.AbiEnza.Results <- DESeq2.AbiEnza.Results %>% 
-  dplyr::mutate(isSig = ifelse(padj <= 0.05 & lfcSE <= 1 & baseMean >= 50 & abs(log2FoldChange) >= 0.5, 'Significant', 'Not Significant'))
-
-DESeq2.AbiEnza.Results %>% dplyr::filter(isSig == 'Significant')
