@@ -1,6 +1,6 @@
 # Author:    Job van Riet
-# Date:      01-04-21
-# Function:  Import and processing of the Abi/Enza-treated RNA-Seq samples (DR-071).
+# Date:      08-04-21
+# Function:  Figure of the differential analysis between good vs. poor responders on Abi/Enza-treatment.
 
 # Set seed for reproducibility of t-SNE
 set.seed(708813)
@@ -29,7 +29,7 @@ plots <- list()
 # Generate t-SNE of Poor vs. Good responders ------------------------------
 
 ## Retrieve VST-counts. ----
-countData <- SummarizedExperiment::assay(DESeq2::vst(DESeq2Counts.AbiEnza, blind = T))
+countData <- SummarizedExperiment::assay(DESeq2::vst(DESeq2Counts.AbiEnza, blind = F))
 rownames(countData) <- rowData(DESeq2Counts.AbiEnza)$SYMBOL
 
 ## Perform T-SNE on DE-genes. ----
@@ -48,18 +48,20 @@ TSNE.AbiEnza$Sample <- DESeq2Counts.AbiEnza$sampleId
 
 ## Plot t-SNE ----
 
-plots$tSNE.All <- ggplot2::ggplot(TSNE.AbiEnza.All, ggplot2::aes(x = X1, y = X2, fill = responderCategory, label = Sample)) +
-  ggplot2::geom_point(shape = 21, size = 2.5) +
+plots$tSNE.All <- ggplot2::ggplot(TSNE.AbiEnza.All, ggplot2::aes(x = X1, y = X2, fill = responderCategory, shape = ClassificationType, label = Sample)) +
+  ggplot2::geom_point(size = 2.5) +
   ggplot2::scale_fill_manual(values = c('Poor Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73', 'Unknown Responder' = '#999999')) +
+  ggplot2::scale_shape_manual(values = c(21, 23)) +
   ggplot2::labs(x = 't-SNE Dimension 1', y = 't-SNE Dimension 2') +
-  ggplot2::guides(fill = ggplot2::guide_legend(title = 'Mutational Categories', title.position = 'top', title.hjust = 0.5, ncol = 3, keywidth = 0.5, keyheight = 0.5)) +
+  ggplot2::guides(fill = ggplot2::guide_legend(title = 'Responder Category', title.position = 'top', title.hjust = 0.5, ncol = 3, keywidth = 0.5, keyheight = 0.5)) +
   theme_Job
 
-plots$tSNE.DE <- ggplot2::ggplot(TSNE.AbiEnza, ggplot2::aes(x = X1, y = X2, fill = responderCategory, label = Sample)) +
-  ggplot2::geom_point(shape = 21, size = 2.5) +
+plots$tSNE.DE <- ggplot2::ggplot(TSNE.AbiEnza, ggplot2::aes(x = X1, y = X2, fill = responderCategory, shape = ClassificationType, label = Sample)) +
+  ggplot2::geom_point(size = 2.5) +
   ggplot2::scale_fill_manual(values = c('Poor Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73', 'Unknown Responder' = '#999999')) +
+  ggplot2::scale_shape_manual(values = c(21, 23)) +
   ggplot2::labs(x = 't-SNE Dimension 1', y = 't-SNE Dimension 2') +
-  ggplot2::guides(fill = ggplot2::guide_legend(title = 'Mutational Categories', title.position = 'top', title.hjust = 0.5, ncol = 3, keywidth = 0.5, keyheight = 0.5)) +
+  ggplot2::guides(fill = ggplot2::guide_legend(title = 'Responder Category', title.position = 'top', title.hjust = 0.5, ncol = 3, keywidth = 0.5, keyheight = 0.5)) +
   theme_Job
 
 
@@ -89,10 +91,10 @@ annotation.col <- annotation.col %>% dplyr::mutate(Treatment.Duration = ifelse(i
 annotation.colors <- list(
   'Direction' = c('Up-regulated in Poor Responders' = '#D03C3F', 'Down-regulated in Poor Responders' = '#5EA153'),
   'Responder.Category' = c('Poor Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73', 'Unknown Responder' = '#999999'),
-  'Biopsy.Site' = c("Liver" = '#FF3500', "Lung" = '#FFA000', "Prostate" = '#EDAEAE', "Bone" = '#FEFEFE', "Other" = '#4CA947', "Lymph node" = '#0A6C94'),
+  'Biopsy.Site' = c('Liver' = '#FF3500', 'Lung' = '#FFA000', 'Prostate' = '#EDAEAE', 'Bone' = '#FEFEFE', 'Other' = '#4CA947', 'Lymph node' = '#0A6C94'),
   'TMPRSS2.ERG' = c('Yes' = 'grey10', 'No' = 'grey80'),
-  'Treatment' = c('Enzalutamide' = '#F16A6D', 'Abiraterone' = '#A5CAE0'),
-  'Subtype' = c("t-NEPC (RNA-Seq)" = 'grey10', "mCRPC" = 'grey80'),
+  'Treatment' = c('Abiraterone' = '#2a7fff', 'Enzalutamide' = '#ff7f2a'),
+  'Subtype' = c('t-NEPC (RNA-Seq)' = 'grey10', 'mCRPC' = 'grey80'),
   'Treatment.Duration' = RColorBrewer::brewer.pal(9, 'Greens')
 )
 
@@ -104,7 +106,7 @@ pheatmap::pheatmap(
   show_colnames = F, show_rownames = T,
   cluster_cols = T, cluster_rows = T, scale = 'row',
   annotation_col = annotation.col, annotation_row = annotation.row, annotation_colors = annotation.colors,
-  clustering_distance_rows = 'euclidean', clustering_distance_cols = 'euclidean', clustering_method = 'ward.D',
+  clustering_distance_rows = 'euclidean', clustering_distance_cols = 'euclidean', clustering_method = 'ward.D2',
   cellheight = 6, cellwidth = 5,
   border_color = 'grey90',
   color = colorRampPalette(c('green', 'white', 'red'))(101), 

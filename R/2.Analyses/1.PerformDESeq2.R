@@ -22,7 +22,7 @@ DESeq2.AbiEnza.Results <- R2CPCT::retrieveDESeq2Results(DESeq2.AbiEnza, contrast
 
 # Retrieve Diff. Exprs. genes (DE).
 DESeq2.AbiEnza.Results <- DESeq2.AbiEnza.Results %>% 
-  dplyr::mutate(isSig = ifelse(padj <= 0.05 & lfcSE <= 1 & baseMean >= 50 & abs(log2FoldChange) >= 0.5, 'Significant', 'Not Significant'))
+  dplyr::mutate(isSig = ifelse(padj <= 0.05 & baseMean >= 25 & (((abs(log2FoldChange) - lfcSE) >= .5) | lfcSE <= .5) & abs(log2FoldChange) >= 0.5, 'Significant', 'Not Significant'))
 
 # Write to tmp. file and add to Suppl. Table 1.
 write.table(DESeq2.AbiEnza.Results, file = 'DifferentialAnalysis.txt', quote = F, sep = '\t', row.names = F)
