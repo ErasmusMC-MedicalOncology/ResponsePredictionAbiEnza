@@ -1,7 +1,6 @@
 # Author:    Job van Riet
-# Date:      08-04-21
+# Date:      16-04-21
 # Function:  Genomic overview of the Abi/Enza-treated patients.
-
 
 
 # Import data and themes --------------------------------------------------
@@ -215,4 +214,21 @@ tracks.landscape$RNA <- AbiEnza.Metadata %>%
   themeAnno_Job + ggplot2::theme(legend.position = 'none')
 
 ## Combine tracks. ----
+
+
+tracks.landscape$responderCategory +
+  tracks.landscape$treatmentDuration + 
+  tracks.landscape$TMB +
+  tracks.landscape$SV +
+  tracks.landscape$SV.Cat +
+  tracks.landscape$Ploidy +
+  tracks.landscape$MutSigs.SNV +
+  tracks.landscape$MSI +
+  tracks.landscape$HRD +
+  tracks.landscape$Chromothripsis +
+  tracks.landscape$biopsySite +
+  tracks.landscape$ERG +
+  tracks.landscape$RNA +
+  patchwork::plot_layout(guides = 'collect', ncol = 1, heights = c(.25, rep(1, 6), rep(.25, 6))) +
+  patchwork::plot_annotation(tag_levels = 'a')
 

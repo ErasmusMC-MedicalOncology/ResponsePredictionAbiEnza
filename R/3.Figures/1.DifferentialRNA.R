@@ -21,6 +21,7 @@ AbiEnza.DE <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xlsx', she
 
 # Retrieve RNA-Seq counts.
 load('/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/RData/DESeq2Counts.AbiEnza.RData')
+load('/mnt/data2/hartwig/DR71/Oct2020/RData/DR71.MetaData.RData')
 
 # List to contain plots.
 plots <- list()
@@ -50,7 +51,7 @@ TSNE.AbiEnza$Sample <- DESeq2Counts.AbiEnza$sampleId
 
 plots$tSNE.All <- ggplot2::ggplot(TSNE.AbiEnza.All, ggplot2::aes(x = X1, y = X2, fill = responderCategory, shape = ClassificationType, label = Sample)) +
   ggplot2::geom_point(size = 2.5) +
-  ggplot2::scale_fill_manual(values = c('Poor Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73', 'Unknown Responder' = '#999999')) +
+  ggplot2::scale_fill_manual(values = c('Poor Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73')) +
   ggplot2::scale_shape_manual(values = c(21, 23)) +
   ggplot2::labs(x = 't-SNE Dimension 1', y = 't-SNE Dimension 2') +
   ggplot2::guides(fill = ggplot2::guide_legend(title = 'Responder Category', title.position = 'top', title.hjust = 0.5, ncol = 3, keywidth = 0.5, keyheight = 0.5)) +
@@ -58,7 +59,7 @@ plots$tSNE.All <- ggplot2::ggplot(TSNE.AbiEnza.All, ggplot2::aes(x = X1, y = X2,
 
 plots$tSNE.DE <- ggplot2::ggplot(TSNE.AbiEnza, ggplot2::aes(x = X1, y = X2, fill = responderCategory, shape = ClassificationType, label = Sample)) +
   ggplot2::geom_point(size = 2.5) +
-  ggplot2::scale_fill_manual(values = c('Poor Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73', 'Unknown Responder' = '#999999')) +
+  ggplot2::scale_fill_manual(values = c('Poor Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73')) +
   ggplot2::scale_shape_manual(values = c(21, 23)) +
   ggplot2::labs(x = 't-SNE Dimension 1', y = 't-SNE Dimension 2') +
   ggplot2::guides(fill = ggplot2::guide_legend(title = 'Responder Category', title.position = 'top', title.hjust = 0.5, ncol = 3, keywidth = 0.5, keyheight = 0.5)) +
@@ -83,15 +84,15 @@ annotation.col <- data.frame(
 )
 
 # Clean-up annotations.
-annotation.col <- annotation.col %>% dplyr::mutate(Biopsy.Site = ifelse(Biopsy.Site %in% c('Bone', 'Lung', 'Lymph node', 'Liver', 'Prostate'), Biopsy.Site, 'Other'))
+annotation.col <- annotation.col %>% dplyr::mutate(Biopsy.Site = ifelse(Biopsy.Site %in% c('Bone', 'Lung', 'Lymph node', 'Liver'), Biopsy.Site, 'Other'))
 annotation.col <- annotation.col %>% dplyr::mutate(Treatment = gsub('/.*', '', Treatment))
 annotation.col <- annotation.col %>% dplyr::mutate(Treatment.Duration = ifelse(is.na(Treatment.Duration), -50, Treatment.Duration))
 
 # Colors of the annotations.
 annotation.colors <- list(
   'Direction' = c('Up-regulated in Poor Responders' = '#D03C3F', 'Down-regulated in Poor Responders' = '#5EA153'),
-  'Responder.Category' = c('Poor Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73', 'Unknown Responder' = '#999999'),
-  'Biopsy.Site' = c('Liver' = '#FF3500', 'Lung' = '#FFA000', 'Prostate' = '#EDAEAE', 'Bone' = '#FEFEFE', 'Other' = '#4CA947', 'Lymph node' = '#0A6C94'),
+  'Responder.Category' = c('Poor Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73'),
+  'Biopsy.Site' = c('Liver' = '#FF3500', 'Lung' = '#FFA000', 'Bone' = '#FEFEFE', 'Other' = '#4CA947', 'Lymph node' = '#0A6C94'),
   'TMPRSS2.ERG' = c('Yes' = 'grey10', 'No' = 'grey80'),
   'Treatment' = c('Abiraterone' = '#2a7fff', 'Enzalutamide' = '#ff7f2a'),
   'Subtype' = c('t-NEPC (RNA-Seq)' = 'grey10', 'mCRPC' = 'grey80'),
@@ -117,5 +118,5 @@ pheatmap::pheatmap(
 # Combine plots -----------------------------------------------------------
 
 plots$tSNE.All + plots$tSNE.DE + 
-  patchwork::plot_layout(guides = 'keep', nrow = 1) +
+  patchwork::plot_layout(guides = 'collect', nrow = 2) +
   patchwork::plot_annotation(tag_levels = 'a')
