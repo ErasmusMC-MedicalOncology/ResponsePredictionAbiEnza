@@ -215,7 +215,6 @@ tracks.landscape$RNA <- AbiEnza.Metadata %>%
 
 ## Combine tracks. ----
 
-
 tracks.landscape$responderCategory +
   tracks.landscape$treatmentDuration + 
   tracks.landscape$TMB +
@@ -232,3 +231,65 @@ tracks.landscape$responderCategory +
   patchwork::plot_layout(guides = 'collect', ncol = 1, heights = c(.25, rep(1, 6), rep(.25, 6))) +
   patchwork::plot_annotation(tag_levels = 'a')
 
+
+# Differences in genomic landscape ----------------------------------------
+
+## Perform statistical tests. ----
+statTests <- list()
+
+statTests$TMB <- AbiEnza.Results$mutationalBurden %>% 
+  dplyr::select(sampleId = sample, Genome.TMB) %>% 
+  dplyr::inner_join(includedGroups) %>% 
+  rstatix::pairwise_wilcox_test(Genome.TMB ~ responderCategory, exact = T, p.adjust.method = 'none', detailed = T, alternative = 'two.sided', paired = F) %>%
+  rstatix::add_significance(cutpoints = c(0, 0.001, 0.01, 0.05, 1), symbols = c('***', '**', '*', 'ns'))
+
+statTests$SV <- AbiEnza.Results$mutationalBurden %>% 
+  dplyr::select(sampleId = sample, totalSV) %>% 
+  dplyr::inner_join(includedGroups) %>% 
+  rstatix::pairwise_wilcox_test(totalSV ~ responderCategory, exact = T, p.adjust.method = 'none', detailed = T, alternative = 'two.sided', paired = F) %>%
+  rstatix::add_significance(cutpoints = c(0, 0.001, 0.01, 0.05, 1), symbols = c('***', '**', '*', 'ns'))
+
+## Generate figures. ----
+
+plotsDiff <- list()
+
+### Genome-wide TMB per Responder group. ----
+plotsDiff$TMB <- AbiEnza.Results$mutationalBurden %>% 
+  dplyr::select(sampleId = sample, Genome.TMB) %>% 
+  dplyr::inner_join(includedGroups) %>% 
+  dplyr::group_by(responderCategory) %>%
+  dplyr::mutate(median = round(median(Genome.TMB), 1)) %>%
+  dplyr::ungroup() %>%
+  ggplot2::ggplot(., ggplot2::aes(x = responderCategory, y = Genome.TMB, fill = responderCategory, label = median)) +
+  gghalves::geom_half_boxplot(side = 'l', alpha = .3, outlier.shape = NA, notch = F, show.legend = F) +
+  gghalves::geom_half_point_panel(side = 'r', position = ggbeeswarm::position_quasirandom(width = .15), size = 1.5, shape = 21, color = 'black', lwd = .01) +
+  ggplot2::scale_y_continuous(trans = scales::pseudo_log_trans(), expand = c(0,0), breaks = c(0, 2.5, 5, 10, 25, 50, 100), limits = c(0, 175)) +
+  ggplot2::scale_fill_manual(values = c('Poor Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73'), guide = guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, nrow = 1, keywidth = 0.5, keyheight = 0.5)) +
+  ggplot2::stat_summary(fun = median, colour = 'black', geom = 'text', size = 3, show.legend = FALSE, vjust = -4, angle = 90) +
+  ggplot2::labs(x = NULL, y = 'Tumor Mutational Burden<br><span style = "font-size:5pt">(Genome-wide; log<sub>10</sub>)</span>') +
+  ggpubr::geom_bracket(aes(xmin = group1, xmax = group2, label = p.adj.signif, fill = NULL, color = NULL, shape = NULL), data = statTests$TMB, y.position = 4.7, step.increase = .02, tip.length = .01) +
+  theme_Job
+
+### Total nr. of SV per Responder group. ----
+plotsDiff$SV <- AbiEnza.Results$mutationalBurden %>% 
+  dplyr::select(sampleId = sample, totalSV) %>% 
+  dplyr::inner_join(includedGroups) %>% 
+  dplyr::group_by(responderCategory) %>%
+  dplyr::mutate(median = round(median(totalSV), 0)) %>%
+  dplyr::ungroup() %>%
+  ggplot2::ggplot(., ggplot2::aes(x = responderCategory, y = totalSV, fill = responderCategory, label = median)) +
+  gghalves::geom_half_boxplot(side = 'l', alpha = .3, outlier.shape = NA, notch = F, show.legend = F) +
+  gghalves::geom_half_point_panel(side = 'r', position = ggbeeswarm::position_quasirandom(width = .15), size = 1.5, shape = 21, color = 'black', lwd = .01) +
+  ggplot2::scale_y_continuous(expand = c(0,0), breaks = c(0, 100, 250, 500, 1000, 1500, 2000), limits = c(0, 2250)) +
+  ggplot2::scale_fill_manual(values = c('Poor Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73'), guide = guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, nrow = 1, keywidth = 0.5, keyheight = 0.5)) +
+  ggplot2::stat_summary(fun = median, colour = 'black', geom = 'text', size = 3, show.legend = FALSE, vjust = -4, angle = 90) +
+  ggplot2::labs(x = NULL, y = 'Nr. of structural variants<br><span style = "font-size:5pt">(Genome-wide)') +
+  ggpubr::geom_bracket(aes(xmin = group1, xmax = group2, label = p.adj.signif, fill = NULL, color = NULL, shape = NULL), data = statTests$SV, y.position = 2100, step.increase = .02, tip.length = .01) +
+  theme_Job
+
+
+### Combine plots. ----
+
+plotsDiff$TMB + plotsDiff$SV +   
+  patchwork::plot_layout(guides = 'collect', ncol = 2) +
+  patchwork::plot_annotation(tag_levels = 'a')

@@ -150,3 +150,4 @@ sigData <- AbiEnza.Results$mutSigs$SNV$relativeContribution %>%
   dplyr::summarise(p = stats::pairwise.wilcox.test(relContribution, responderCategory, p.adjust.method = 'none', paired = FALSE)$p.value) %>% 
   dplyr::ungroup() %>% 
   dplyr::mutate(p.adj = stats::p.adjust(p, method = 'BH'))
+
