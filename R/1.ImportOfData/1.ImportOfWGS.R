@@ -1,5 +1,5 @@
 # Author:    Job van Riet
-# Date:      16-04-21
+# Date:      30-04-21
 # Function:  Import and processing of the Abi/Enza-treated WGS samples (DR-071).
 
 # Libraries ---------------------------------------------------------------
@@ -17,8 +17,8 @@ AbiEnza.Metadata <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xlsx
 # Import / convert WGS samples --------------------------------------------
 
 # Import the WGS data of all samples in the cohort.
-AbiEnza.CohortWGS <- R2CPCT::importWGSOfCohort(AbiEnza.Metadata$sampleId, '/mnt/data2/hartwig/DR71/Oct2020/dataHMF/combinedData/', nThreads = 20)
-save(AbiEnza.CohortWGS, file = '/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/RData/AbiEnza.CohortWGS.RData')
+AbiEnza.CohortWGS <- R2CPCT::importWGSOfCohort(AbiEnza.Metadata$sampleId, '/mnt/data2/hartwig/DR71/Apr2021/dataHMF/combinedData/', nThreads = 40)
+save(AbiEnza.CohortWGS, file = '/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.CohortWGS.RData')
 
 
 # Perform GISTIC2 analysis ------------------------------------------------
@@ -27,16 +27,16 @@ save(AbiEnza.CohortWGS, file = '/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/RData/Ab
 # Perform this separately per responder group (Good / Poor).
 
 # All samples.
-R2CPCT::performGISTIC2(AbiEnza.CohortWGS$copyNumbers, outputFolder = '/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/results/GISTIC2/AllSamples/')
+R2CPCT::performGISTIC2(AbiEnza.CohortWGS$copyNumbers, outputFolder = '/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/results/GISTIC2/AllSamples/')
 
 # Good responders.
-R2CPCT::performGISTIC2(AbiEnza.CohortWGS$copyNumbers[GenomicRanges::mcols(AbiEnza.CohortWGS$copyNumbers)$sample %in% (AbiEnza.Metadata %>% dplyr::filter(grepl('Good Responder', responderCategory)) %>% dplyr::pull(sampleId)),], outputFolder = '/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/results/GISTIC2/GoodResponders/')
+R2CPCT::performGISTIC2(AbiEnza.CohortWGS$copyNumbers[GenomicRanges::mcols(AbiEnza.CohortWGS$copyNumbers)$sample %in% (AbiEnza.Metadata %>% dplyr::filter(grepl('Good Responder', Responder)) %>% dplyr::pull(sampleId)),], outputFolder = '/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/results/GISTIC2/GoodResponders/')
 
 # Poor responders.
-R2CPCT::performGISTIC2(AbiEnza.CohortWGS$copyNumbers[GenomicRanges::mcols(AbiEnza.CohortWGS$copyNumbers)$sample %in% (AbiEnza.Metadata %>% dplyr::filter(grepl('Poor Responder', responderCategory)) %>% dplyr::pull(sampleId)),], outputFolder = '/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/results/GISTIC2/PoorResponders/')
+R2CPCT::performGISTIC2(AbiEnza.CohortWGS$copyNumbers[GenomicRanges::mcols(AbiEnza.CohortWGS$copyNumbers)$sample %in% (AbiEnza.Metadata %>% dplyr::filter(grepl('Bad Responder', Responder)) %>% dplyr::pull(sampleId)),], outputFolder = '/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/results/GISTIC2/BadResponders/')
 
-# GISTIC2 command used:
-# GISTIC2_2.0.23/gistic2 -b /mnt/data2/hartwig/DR71/Oct2020_AbiEnza/results/GISTIC2/PoorResponders/ -seg /tmp/Rtmp7hzfek/50de7e5bd09e.txt -refgene GISTIC2_2.0.23/refgenefiles/hg19.UCSC.add_miR.140312.refgene.mat -genegistic 1 -gcm extreme -maxseg 4000 -broad 1 -brlen 0.98 -conf 0.95 -rx 0 -cap 3 -saveseg 0 -armpeel 1 -smallmem 0 -res 0.01 -ta 0.3 -td 0.3 -savedata 0 -savegene 1 -qvt 0.1 -twoside 0
+# Example of the GISTIC2 command used:
+# GISTIC2_2.0.23/gistic2 -b /mnt/data2/hartwig/DR71/Apr2021_AbiEnza/results/GISTIC2/BadResponders/ -seg /tmp/Rtmp7hzfek/50de7e5bd09e.txt -refgene GISTIC2_2.0.23/refgenefiles/hg19.UCSC.add_miR.140312.refgene.mat -genegistic 1 -gcm extreme -maxseg 4000 -broad 1 -brlen 0.98 -conf 0.95 -rx 0 -cap 3 -saveseg 0 -armpeel 1 -smallmem 0 -res 0.01 -ta 0.3 -td 0.3 -savedata 0 -savegene 1 -qvt 0.1 -twoside 0
 
 
 # Cohort-wide analysis ----------------------------------------------------
@@ -49,13 +49,13 @@ AbiEnza.Results$mutationalBurden <- R2CPCT::determineMutationalBurden(AbiEnza.Co
 
 # Perform dN/dS on entire cohort and per responder groups.
 AbiEnza.Results$dNdS <- R2CPCT::rundNdS(AbiEnza.CohortWGS$somaticVariants)
-AbiEnza.Results$dNdS.GoodResponders <- R2CPCT::rundNdS(AbiEnza.CohortWGS$somaticVariants[AbiEnza.CohortWGS$somaticVariants$sample %in% (AbiEnza.Metadata %>% dplyr::filter(grepl('Good Responder', responderCategory)) %>% dplyr::pull(sampleId)),])
-AbiEnza.Results$dNdS.PoorResponders <- R2CPCT::rundNdS(AbiEnza.CohortWGS$somaticVariants[AbiEnza.CohortWGS$somaticVariants$sample %in% (AbiEnza.Metadata %>% dplyr::filter(grepl('Poor Responder', responderCategory)) %>% dplyr::pull(sampleId)),])
+AbiEnza.Results$dNdS.GoodResponders <- R2CPCT::rundNdS(AbiEnza.CohortWGS$somaticVariants[AbiEnza.CohortWGS$somaticVariants$sample %in% (AbiEnza.Metadata %>% dplyr::filter(grepl('Good Responder', Responder)) %>% dplyr::pull(sampleId)),])
+AbiEnza.Results$dNdS.BadResponders <- R2CPCT::rundNdS(AbiEnza.CohortWGS$somaticVariants[AbiEnza.CohortWGS$somaticVariants$sample %in% (AbiEnza.Metadata %>% dplyr::filter(grepl('Bad Responder', Responder)) %>% dplyr::pull(sampleId)),])
 
 # Import the GISTIC2-determined recurrent CNA peaks.
-AbiEnza.Results$GISTIC2.AllSamples <- R2CPCT::importGISTIC2('/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/results/GISTIC2/AllSamples/')
-AbiEnza.Results$GISTIC2.GoodResponders <- R2CPCT::importGISTIC2('/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/results/GISTIC2/GoodResponders/')
-AbiEnza.Results$GISTIC2.PoorResponders <- R2CPCT::importGISTIC2('/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/results/GISTIC2/PoorResponders/')
+AbiEnza.Results$GISTIC2.AllSamples <- R2CPCT::importGISTIC2('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/results/GISTIC2/AllSamples/')
+AbiEnza.Results$GISTIC2.GoodResponders <- R2CPCT::importGISTIC2('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/results/GISTIC2/GoodResponders/')
+AbiEnza.Results$GISTIC2.BadResponders <- R2CPCT::importGISTIC2('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/results/GISTIC2/BadResponders/')
 
 # Generate the gene-level mutational overview.
 AbiEnza.Results$combinedReport <- R2CPCT::generateCombinedReport(AbiEnza.CohortWGS, dNdS = AbiEnza.Results$dNdS, GISTIC2 = AbiEnza.Results$GISTIC2.AllSamples, nThreads = 20, mutantsOnly = T)
@@ -67,8 +67,16 @@ AbiEnza.Results$mutSigs <- R2CPCT::fitMutSigs(AbiEnza.CohortWGS$somaticVariants,
 AbiEnza.Results$TiTv <- R2CPCT::determineTiTv(AbiEnza.Results$mutSigs$SNV$mutMatrix)
 
 # Save results.
-save(AbiEnza.Results, file = '/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/RData/AbiEnza.Results.RData')
+save(AbiEnza.Results, file = '/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Results.RData')
 
+
+# Determine which samples have genomic ERG fusion -------------------------
+
+AbiEnza.Metadata <- AbiEnza.Metadata %>% dplyr::mutate(
+  hasGenomicERG = ifelse(sampleId %in% (AbiEnza.CohortWGS$fusionsLINX %>% dplyr::filter(reported, name %in% c('TMPRSS2_ERG', 'SLC45A3_ERG')) %>% dplyr::pull(sample)), 'Yes', 'No')
+  )
+
+save(AbiEnza.Metadata, file = '/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
 
 # Close logger ------------------------------------------------------------
 

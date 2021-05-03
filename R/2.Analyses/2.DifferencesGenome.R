@@ -1,27 +1,28 @@
 # Author:    Job van Riet
-# Date:      06-04-21
-# Function:  Analyze genomic differences between Good and Poor responders.
+# Date:      03-05-21
+# Function:  Analyze genomic differences between Good and Bad responders.
 
 # Libraries ---------------------------------------------------------------
 
 library(R2CPCT)
 
 # Load metadata of the Abi/Enza-treated patients.
-AbiEnza.Metadata <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xlsx', sheet = 'Sample overview')
+load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
 
 # Retrieve WGS-data.
-load('/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/RData/AbiEnza.Results.RData')
+load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Results.RData')
 
 
 # Detect mutually-exclusive aberrations -----------------------------------
 
 # Only check between the major groups.
 includedGroups <- AbiEnza.Metadata %>% 
-  dplyr::filter(responderCategory != 'Unknown Responder') %>% 
-  dplyr::distinct(sampleId, responderCategory) %>% 
-  dplyr::group_by(responderCategory) %>% 
+  dplyr::filter(Responder != 'Unknown Responder') %>% 
+  dplyr::distinct(sampleId, Responder) %>% 
+  dplyr::group_by(Responder) %>% 
   dplyr::mutate(totalInGroup = dplyr::n_distinct(sampleId)) %>% 
   dplyr::ungroup()
+
 
 # Retrieve all relevant driver(-like) genes. ----
 
@@ -29,7 +30,7 @@ includedGroups <- AbiEnza.Metadata %>%
 minSamples.Mut <- AbiEnza.Results$combinedReport %>%
   dplyr::filter(isMutant, ENSEMBL %in% R2CPCT::driverList$ENSEMBL) %>% 
   dplyr::inner_join(includedGroups, by = c('sample' = 'sampleId')) %>%
-  dplyr::group_by(responderCategory, ENSEMBL, SYMBOL) %>%
+  dplyr::group_by(Responder, ENSEMBL, SYMBOL) %>%
   dplyr::summarise(
     totalMuts = dplyr::n_distinct(sample),
     totalMuts.Rel = totalMuts / totalInGroup
@@ -42,7 +43,7 @@ minSamples.Mut <- AbiEnza.Results$combinedReport %>%
 driverGenes <- unique(c(
   AbiEnza.Results$dNdS$finalOutput %>% dplyr::filter(qallsubs_cv <= .1 | qglobal_cv <= .1) %>% dplyr::pull(ENSEMBL),
   AbiEnza.Results$dNdS.GoodResponders$finalOutput %>% dplyr::filter(qallsubs_cv <= .1 | qglobal_cv <= .1) %>% dplyr::pull(ENSEMBL),
-  AbiEnza.Results$dNdS.PoorResponders$finalOutput %>% dplyr::filter(qallsubs_cv <= .1 | qglobal_cv <= .1) %>% dplyr::pull(ENSEMBL),
+  AbiEnza.Results$dNdS.BadResponders$finalOutput %>% dplyr::filter(qallsubs_cv <= .1 | qglobal_cv <= .1) %>% dplyr::pull(ENSEMBL),
   minSamples.Mut
 ))
 
@@ -52,7 +53,7 @@ driverGenes <- unique(c(
 mutData <- AbiEnza.Results$combinedReport %>%
   dplyr::filter(ENSEMBL %in% driverGenes) %>% 
   dplyr::inner_join(includedGroups, by = c('sample' = 'sampleId')) %>% 
-  dplyr::group_by(responderCategory, SYMBOL) %>%
+  dplyr::group_by(Responder, SYMBOL) %>%
   dplyr::summarise(
     totalMut = sum(isMutant),
     noMut = totalInGroup - totalMut
@@ -62,7 +63,7 @@ mutData <- AbiEnza.Results$combinedReport %>%
 # Count HRD-positives.
 mutHRD <- AbiEnza.Results$mutationalBurden %>%
   dplyr::inner_join(includedGroups, by = c('sample' = 'sampleId')) %>% 
-  dplyr::group_by(responderCategory) %>%
+  dplyr::group_by(Responder) %>%
   dplyr::summarise(
     totalMut = dplyr::n_distinct(sample[hr_status == 'HR_deficient']),
     noMut = dplyr::n_distinct(sample[hr_status != 'HR_deficient']),
@@ -73,7 +74,7 @@ mutHRD <- AbiEnza.Results$mutationalBurden %>%
 # Count chromothripsis-positives.
 mutChromo <- AbiEnza.Results$mutationalBurden %>%
   dplyr::inner_join(includedGroups, by = c('sample' = 'sampleId')) %>% 
-  dplyr::group_by(responderCategory) %>%
+  dplyr::group_by(Responder) %>%
   dplyr::summarise(
     totalMut = dplyr::n_distinct(sample[hasChromothripsis == 'Yes']),
     noMut = dplyr::n_distinct(sample[hasChromothripsis != 'Yes']),
@@ -84,7 +85,7 @@ mutChromo <- AbiEnza.Results$mutationalBurden %>%
 # Count ERG-positives.
 mutERG <- AbiEnza.Metadata %>%
   dplyr::filter(sampleId %in% includedGroups$sampleId) %>% 
-  dplyr::group_by(responderCategory) %>%
+  dplyr::group_by(Responder) %>%
   dplyr::summarise(
     totalMut = dplyr::n_distinct(sampleId[hasGenomicERG == 'Yes']),
     noMut = dplyr::n_distinct(sampleId[hasGenomicERG != 'Yes']),
@@ -99,10 +100,10 @@ mutData <- rbind(mutData, mutHRD, mutChromo, mutERG) %>%
 
 # Complete missing data.
 mutData <- mutData %>%
-  tidyr::complete(SYMBOL, responderCategory) %>%
+  tidyr::complete(SYMBOL, Responder) %>%
   dplyr::mutate(
     totalMut = ifelse(is.na(totalMut), 0, totalMut),
-    noMut = ifelse(is.na(noMut), unique(includedGroups[includedGroups$responderCategory == unique(responderCategory),]$totalInGroup), noMut)
+    noMut = ifelse(is.na(noMut), unique(includedGroups[includedGroups$Responder == unique(Responder),]$totalInGroup), noMut)
   )
 
 # Perform Fisher's Exact Test between responder categories.
@@ -111,11 +112,11 @@ fisherData <- do.call(rbind, lapply(unique(mutData$SYMBOL), function(gene){
   geneData <- mutData %>%
     dplyr::filter(SYMBOL == gene) %>%
     dplyr::summarise(
-      Good.withMut = totalMut[responderCategory == 'Good Responder (>100 days)'],
-      Good.withoutMut = noMut[responderCategory == 'Good Responder (>100 days)'],
+      Good.withMut = totalMut[Responder == 'Good Responder (>100 days)'],
+      Good.withoutMut = noMut[Responder == 'Good Responder (>100 days)'],
       
-      Poor.withMut = sum(totalMut[responderCategory != 'Good Responder (>100 days)']),
-      Poor.withoutMut = sum(noMut[responderCategory != 'Good Responder (>100 days)']),
+      Poor.withMut = sum(totalMut[Responder != 'Good Responder (>100 days)']),
+      Poor.withoutMut = sum(noMut[Responder != 'Good Responder (>100 days)']),
     )
   
   test <- data.frame(
@@ -140,14 +141,3 @@ fisherData <- fisherData %>% dplyr::mutate(
 
 # Correct for multiple-testing.
 fisherData$p.adj <- stats::p.adjust(fisherData$p, method = 'BH')
-
-
-# Differences in Mut. Signatures ------------------------------------------
-
-sigData <- AbiEnza.Results$mutSigs$SNV$relativeContribution %>% 
-  dplyr::inner_join(includedGroups) %>% 
-  dplyr::group_by(Signature) %>% 
-  dplyr::summarise(p = stats::pairwise.wilcox.test(relContribution, responderCategory, p.adjust.method = 'none', paired = FALSE)$p.value) %>% 
-  dplyr::ungroup() %>% 
-  dplyr::mutate(p.adj = stats::p.adjust(p, method = 'BH'))
-
