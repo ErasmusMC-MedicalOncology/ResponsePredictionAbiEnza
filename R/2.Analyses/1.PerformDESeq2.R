@@ -8,17 +8,17 @@ library(R2CPCT)
 library(DESeq2)
 
 # Load metadata of the Abi/Enza-treated patients.
-AbiEnza.Metadata <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xlsx', sheet = 'Sample overview')
+load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
 
 # Retrieve RNA-Seq counts.
-load('/mnt/data2/hartwig/DR71/Oct2020_AbiEnza/RData/DESeq2Counts.AbiEnza.RData')
+load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/DESeq2Counts.AbiEnza.RData')
 
 # Perform DESeq2 ----------------------------------------------------------
 
 DESeq2.AbiEnza <- DESeq2::DESeq(DESeq2Counts.AbiEnza, test = 'Wald', parallel = T, BPPARAM = BiocParallel::MulticoreParam(workers = 20))
 
 # Retrieve the results. (Poor vs. Good responders)
-DESeq2.AbiEnza.Results <- R2CPCT::retrieveDESeq2Results(DESeq2.AbiEnza, contrast = c('responderCategory.DESeq2', 'Poor', 'Good'))
+DESeq2.AbiEnza.Results <- R2CPCT::retrieveDESeq2Results(DESeq2.AbiEnza, contrast = c('responderCategory.DESeq2', 'Bad', 'Good'))
 
 # Retrieve Diff. Exprs. genes (DE).
 DESeq2.AbiEnza.Results <- DESeq2.AbiEnza.Results %>% 
