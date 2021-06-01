@@ -1,5 +1,5 @@
 # Author:    Job van Riet
-# Date:      30-04-21
+# Date:      26-05-21
 # Function:  Import and processing of the Abi/Enza-treated WGS samples (DR-071).
 
 # Libraries ---------------------------------------------------------------
@@ -13,6 +13,7 @@ R2CPCT::initializeLogger(file = '~/AbiEnza.log')
 
 # Load metadata of the Abi/Enza-treated patients.
 AbiEnza.Metadata <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xlsx', sheet = 'Sample overview')
+
 
 # Import / convert WGS samples --------------------------------------------
 
@@ -78,6 +79,3 @@ AbiEnza.Metadata <- AbiEnza.Metadata %>% dplyr::mutate(
 
 save(AbiEnza.Metadata, file = '/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
 
-# Close logger ------------------------------------------------------------
-
-ParallelLogger::unregisterLogger()

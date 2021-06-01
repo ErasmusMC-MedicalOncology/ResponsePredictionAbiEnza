@@ -1,5 +1,5 @@
 # Author:    Job van Riet
-# Date:      08-04-21
+# Date:      26-05-21
 # Function:  Figure of the differential analysis between good vs. poor responders on Abi/Enza-treatment.
 
 # Set seed for reproducibility of t-SNE
@@ -18,9 +18,10 @@ load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
 
 # Load DE-Genes from DESeq2.
 AbiEnza.DE <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xlsx', sheet = 'Differential Expression') %>% dplyr::filter(`Significant Threshold` == 'Significant')
+AbiEnza.DE <- readr::read_delim('DifferentialAnalysis.txt', delim = '\t') %>% dplyr::filter(isSig == 'Significant')
 
 # Retrieve RNA-Seq counts.
-load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/DESeq2Counts.AbiEnza.RData')
+load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/DESeq2Counts.AbiEnza_NoRepeatedBiopsies.RData')
 
 # List to contain plots.
 plots <- list()
@@ -56,6 +57,7 @@ plots$tSNE.All <- ggplot2::ggplot(TSNE.AbiEnza.All, ggplot2::aes(x = X1, y = X2,
 
 plots$tSNE.DE <- ggplot2::ggplot(TSNE.AbiEnza, ggplot2::aes(x = X1, y = X2, fill = Responder, label = Sample)) +
   ggplot2::geom_point(shape = 21, size = 2.5) +
+  ggrepel::geom_text_repel() +
   ggplot2::scale_fill_manual(values = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73')) +
   ggplot2::scale_shape_manual(values = c(21, 23)) +
   ggplot2::labs(x = 't-SNE Dimension 1', y = 't-SNE Dimension 2') +

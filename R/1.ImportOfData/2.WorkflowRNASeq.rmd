@@ -26,7 +26,7 @@ opts_knit$set(width = 90)
 
 ## Fastp (adapter, low-quality, low-complexity trimming but without min. length selection; v0.20.0)
 ```{R, eval = F}
-files <- data.frame(R1 = list.files('/mnt/data2/hartwig/DR71/Oct2020/dataHMF/RNASeq/fastq/', pattern = 'R1.*fastq.gz', recursive = T, full.names = T), stringsAsFactors = F) %>% dplyr::mutate(R2 = gsub('_R1_', '_R2_', R1), outR1 = file.path('/mnt/data2/hartwig/DR71/Oct2020/dataHMF/RNASeq/trimmedReads/', gsub('.fastq.gz', '_fastpTrimmed.fastq.gz', basename(R1))), outR2 = file.path('/mnt/data2/hartwig/DR71/Oct2020/dataHMF/RNASeq/trimmedReads/', gsub('.fastq.gz', '_fastpTrimmed.fastq.gz', basename(R2))))
+files <- data.frame(R1 = list.files('/mnt/data2/hartwig/DR71/Apr2021/dataHMF/RNASeq/fastq/', pattern = 'R1.*fastq.gz', recursive = T, full.names = T), stringsAsFactors = F) %>% dplyr::mutate(R2 = gsub('_R1_', '_R2_', R1), outR1 = file.path('/mnt/data2/hartwig/DR71/Apr2021/dataHMF/RNASeq/trimmedReads/', gsub('.fastq.gz', '_fastpTrimmed.fastq.gz', basename(R1))), outR2 = file.path('/mnt/data2/hartwig/DR71/Apr2021/dataHMF/RNASeq/trimmedReads/', gsub('.fastq.gz', '_fastpTrimmed.fastq.gz', basename(R2))))
 
 sprintf('fastp --detect_adapter_for_pe -L --html --thread 5 --in1 %s --in2 %s --out1 %s  --out2 %s', files$R1, files$R2, files$outR1, files$outR2) %>% write.table(., file = 'runTrimming.txt', quote = F, row.names = F, col.names = F)
 ```
@@ -41,7 +41,7 @@ Make genome index (STAR 2.7.6a; hg19_HMF; GENCODE v35)
 Perform STAR alignment per concatenated sample.
 ```{R, eval = F}
 # DR71 reads (trimmed with fastp)
-fastqFiles <- data.frame(R1 = list.files('/mnt/data2/hartwig/DR71/Oct2020/dataHMF/RNASeq/trimmedReads/', pattern = '_R1_.*fastq.gz', full.names = T), stringsAsFactors = F) %>% dplyr::mutate(R2 = gsub('_R1_','_R2_', R1), sample = gsub('_.*','',basename(R1)), readGroupID = gsub('_R1_.*fastpTrimmed.fastq.gz','',basename(R1)), outFile = sprintf('/mnt/data2/hartwig/DR71/Oct2020/dataHMF/RNASeq/BAM/%s_', sample))
+fastqFiles <- data.frame(R1 = list.files('/mnt/data2/hartwig/DR71/Apr2021/dataHMF/RNASeq/trimmedReads/', pattern = '_R1_.*fastq.gz', full.names = T), stringsAsFactors = F) %>% dplyr::mutate(R2 = gsub('_R1_','_R2_', R1), sample = gsub('_.*','',basename(R1)), readGroupID = gsub('_R1_.*fastpTrimmed.fastq.gz','',basename(R1)), outFile = sprintf('/mnt/data2/hartwig/DR71/Apr2021/dataHMF/RNASeq/BAM/%s_', sample))
 
 # Make one command per sample and add all the lanes with correct RG in command.
 z <- fastqFiles %>% dplyr::group_by(sample) %>% dplyr::summarise(
@@ -54,17 +54,17 @@ write.table(z$x, file = '~/test/runAlignment_dr71.txt', quote = F, row.names = F
 # Mark duplicates, re-index and flagstats.
 ```{bash, eval = F}
 # Mark duplicates (sambamba 0.7.0)
-for BAM in /mnt/data2/hartwig/DR71/Oct2020/dataHMF/RNASeq/BAM/*bam
+for BAM in /mnt/data2/hartwig/DR71/Apr2021/dataHMF/RNASeq/BAM/*bam
 do echo "sambamba markdup -t 10 ${BAM} ${BAM%.out.bam}_markDup.bam";
 done
 
 # Flagstats. (sambamba 0.7.0)
-for BAM in /mnt/data2/hartwig/DR71/Oct2020/dataHMF/RNASeq/BAM/*sorted*_markDup.bam
+for BAM in /mnt/data2/hartwig/DR71/Apr2021/dataHMF/RNASeq/BAM/*sorted*_markDup.bam
 do echo "sambamba flagstat -t 10 ${BAM} > ${BAM}.flagstat";
 done
 ```
 
 # Count reads (Only count primary alignment, paired-end and strand-specific; v2.0.0).
 ```{bash, eval =F}
-/mnt/data/ccbc_environment/software/general/subread-2.0.0-Linux-x86_64/featureCounts -T 50 -t exon -g gene_id --primary -p -s 2 -a /mnt/data/ccbc_environment/general/annotation/hg19/GENCODE/noChrPrefix_VEP_gencode.v35lift37.annotation.gtf -o /mnt/data2/hartwig/DR71/Oct2020/dataHMF/RNASeq/counts/DR71_RNA.counts /mnt/data2/hartwig/DR71/Oct2020/dataHMF/RNASeq/BAM/*sorted*markDup.bam
+/mnt/data/ccbc_environment/software/general/subread-2.0.0-Linux-x86_64/featureCounts -T 50 -t exon -g gene_id --primary -p -s 2 -a /mnt/data/ccbc_environment/general/annotation/hg19/GENCODE/noChrPrefix_VEP_gencode.v35lift37.annotation.gtf -o /mnt/data2/hartwig/DR71/Apr2021/dataHMF/RNASeq/counts/DR71_RNA.counts /mnt/data2/hartwig/DR71/Apr2021/dataHMF/RNASeq/BAM/*sorted*markDup.bam
 ```

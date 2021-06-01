@@ -1,5 +1,5 @@
 # Author:    Job van Riet
-# Date:      01-04-21
+# Date:      26-05-21
 # Function:  Performs diff. exprs. analysis between poor and good responders.
 
 # Libraries ---------------------------------------------------------------
@@ -7,11 +7,9 @@
 library(R2CPCT)
 library(DESeq2)
 
-# Load metadata of the Abi/Enza-treated patients.
-load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
-
 # Retrieve RNA-Seq counts.
-load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/DESeq2Counts.AbiEnza.RData')
+load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/DESeq2Counts.AbiEnza_NoRepeatedBiopsies.RData')
+
 
 # Perform DESeq2 ----------------------------------------------------------
 
@@ -22,7 +20,9 @@ DESeq2.AbiEnza.Results <- R2CPCT::retrieveDESeq2Results(DESeq2.AbiEnza, contrast
 
 # Retrieve Diff. Exprs. genes (DE).
 DESeq2.AbiEnza.Results <- DESeq2.AbiEnza.Results %>% 
-  dplyr::mutate(isSig = ifelse(padj <= 0.05 & baseMean >= 25 & (((abs(log2FoldChange) - lfcSE) >= .5) | lfcSE <= .5) & abs(log2FoldChange) >= 0.5, 'Significant', 'Not Significant'))
+  dplyr::mutate(isSig = ifelse(padj <= 0.05 & baseMean >= 50 & (abs(log2FoldChange) - lfcSE >= 1) & abs(log2FoldChange) >= 1, 'Significant', 'Not Significant'))
+
+DESeq2.AbiEnza.Results$isSig %>% table
 
 # Write to tmp. file and add to Suppl. Table 1.
 write.table(DESeq2.AbiEnza.Results, file = 'DifferentialAnalysis.txt', quote = F, sep = '\t', row.names = F)
