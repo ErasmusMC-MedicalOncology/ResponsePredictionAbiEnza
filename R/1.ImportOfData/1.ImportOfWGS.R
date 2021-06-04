@@ -1,5 +1,5 @@
 # Author:    Job van Riet
-# Date:      26-05-21
+# Date:      04-06-21
 # Function:  Import and processing of the Abi/Enza-treated WGS samples (DR-071).
 
 # Libraries ---------------------------------------------------------------
@@ -72,10 +72,6 @@ save(AbiEnza.Results, file = '/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiE
 
 
 # Determine which samples have genomic ERG fusion -------------------------
-
-AbiEnza.Metadata <- AbiEnza.Metadata %>% dplyr::mutate(
-  hasGenomicERG = ifelse(sampleId %in% (AbiEnza.CohortWGS$fusionsLINX %>% dplyr::filter(reported, name %in% c('TMPRSS2_ERG', 'SLC45A3_ERG')) %>% dplyr::pull(sample)), 'Yes', 'No')
-  )
 
 save(AbiEnza.Metadata, file = '/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
 

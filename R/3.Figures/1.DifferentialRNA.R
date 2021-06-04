@@ -1,6 +1,6 @@
 # Author:    Job van Riet
-# Date:      26-05-21
-# Function:  Figure of the differential analysis between good vs. poor responders on Abi/Enza-treatment.
+# Date:      04-06-21
+# Function:  Figure of the differential analysis between good vs. bad responders on Abi/Enza-treatment.
 
 # Set seed for reproducibility of t-SNE
 set.seed(708813)
@@ -18,10 +18,9 @@ load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
 
 # Load DE-Genes from DESeq2.
 AbiEnza.DE <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xlsx', sheet = 'Differential Expression') %>% dplyr::filter(`Significant Threshold` == 'Significant')
-AbiEnza.DE <- readr::read_delim('DifferentialAnalysis.txt', delim = '\t') %>% dplyr::filter(isSig == 'Significant')
 
 # Retrieve RNA-Seq counts.
-load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/DESeq2Counts.AbiEnza_NoRepeatedBiopsies.RData')
+load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/DESeq2Counts.AbiEnza.RData')
 
 # List to contain plots.
 plots <- list()
@@ -30,24 +29,28 @@ plots <- list()
 # Generate t-SNE of Poor vs. Good responders ------------------------------
 
 ## Retrieve VST-counts. ----
-countData <- SummarizedExperiment::assay(DESeq2::vst(DESeq2Counts.AbiEnza, blind = F))
+countData <- SummarizedExperiment::assay(DESeq2::vst(DESeq2Counts.AbiEnza, blind = T, nsub = 2500))
 rownames(countData) <- rowData(DESeq2Counts.AbiEnza)$SYMBOL
 
-## Perform T-SNE on DE-genes. ----
-TSNE.AbiEnza.All <- Rtsne::Rtsne(t(countData), check_duplicates = T, pca = T, theta = .5, perplexity = 9, dims = 2, max_iter = 1E5, num_threads = 20)
-TSNE.AbiEnza.All <- TSNE.AbiEnza.All$Y %>% data.frame()
-TSNE.AbiEnza.All$Responder <- DESeq2Counts.AbiEnza$Responder
-TSNE.AbiEnza.All$Sample <- DESeq2Counts.AbiEnza$sampleId
+countData.NoRepeats <- countData[,DESeq2Counts.AbiEnza$responderCategory.DESeq2 != 'Repeat']
+
 
 ## Perform T-SNE on DE-genes. ----
-TSNE.AbiEnza <- Rtsne::Rtsne(t(countData[rownames(countData) %in% AbiEnza.DE$SYMBOL,]), check_duplicates = T, pca = T, theta = .5, perplexity = 9, dims = 2, max_iter = 1E5, num_threads = 20)
+TSNE.AbiEnza.All <- Rtsne::Rtsne(t(countData.NoRepeats), check_duplicates = T, pca = T, theta = .5, perplexity = 9, dims = 2, max_iter = 1E5, num_threads = 20)
+TSNE.AbiEnza.All <- TSNE.AbiEnza.All$Y %>% data.frame()
+TSNE.AbiEnza.All$Responder <- DESeq2Counts.AbiEnza[,DESeq2Counts.AbiEnza$responderCategory.DESeq2 != 'Repeat']$Responder
+TSNE.AbiEnza.All$Sample <- DESeq2Counts.AbiEnza[,DESeq2Counts.AbiEnza$responderCategory.DESeq2 != 'Repeat']$sampleId
+
+## Perform T-SNE on DE-genes. ----
+TSNE.AbiEnza <- Rtsne::Rtsne(t(countData.NoRepeats[rownames(countData.NoRepeats) %in% AbiEnza.DE$SYMBOL,]), check_duplicates = T, pca = T, theta = .5, perplexity = 9, dims = 2, max_iter = 1E5, num_threads = 20)
 TSNE.AbiEnza <- TSNE.AbiEnza$Y %>% data.frame()
-TSNE.AbiEnza$Responder <- DESeq2Counts.AbiEnza$Responder
-TSNE.AbiEnza$Sample <- DESeq2Counts.AbiEnza$sampleId
+TSNE.AbiEnza$Responder <- DESeq2Counts.AbiEnza[,DESeq2Counts.AbiEnza$responderCategory.DESeq2 != 'Repeat']$Responder
+TSNE.AbiEnza$Sample <- DESeq2Counts.AbiEnza[,DESeq2Counts.AbiEnza$responderCategory.DESeq2 != 'Repeat']$sampleId
+
 
 ## Plot t-SNE ----
 
-plots$tSNE.All <- ggplot2::ggplot(TSNE.AbiEnza.All, ggplot2::aes(x = X1, y = X2, fill = Responder, label = Sample)) +
+plots$tSNE.All <- ggplot2::ggplot(TSNE.AbiEnza.All, ggplot2::aes(x = X1, y = X2, fill = Responder)) +
   ggplot2::geom_point(shape = 21, size = 2.5) +
   ggplot2::scale_fill_manual(values = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73')) +
   ggplot2::scale_shape_manual(values = c(21, 23)) +
@@ -55,14 +58,19 @@ plots$tSNE.All <- ggplot2::ggplot(TSNE.AbiEnza.All, ggplot2::aes(x = X1, y = X2,
   ggplot2::guides(fill = ggplot2::guide_legend(title = 'Responder Category', title.position = 'top', title.hjust = 0.5, ncol = 3, keywidth = 0.5, keyheight = 0.5)) +
   theme_Job
 
-plots$tSNE.DE <- ggplot2::ggplot(TSNE.AbiEnza, ggplot2::aes(x = X1, y = X2, fill = Responder, label = Sample)) +
+plots$tSNE.DE <- ggplot2::ggplot(TSNE.AbiEnza, ggplot2::aes(x = X1, y = X2, fill = Responder)) +
   ggplot2::geom_point(shape = 21, size = 2.5) +
-  ggrepel::geom_text_repel() +
   ggplot2::scale_fill_manual(values = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73')) +
   ggplot2::scale_shape_manual(values = c(21, 23)) +
   ggplot2::labs(x = 't-SNE Dimension 1', y = 't-SNE Dimension 2') +
   ggplot2::guides(fill = ggplot2::guide_legend(title = 'Responder Category', title.position = 'top', title.hjust = 0.5, ncol = 3, keywidth = 0.5, keyheight = 0.5)) +
   theme_Job
+
+# Combine plots -----------------------------------------------------------
+
+plots$tSNE.All + plots$tSNE.DE + 
+  patchwork::plot_layout(guides = 'collect', nrow = 2) +
+  patchwork::plot_annotation(tag_levels = 'a')
 
 
 # Generate heatmap --------------------------------------------------------
@@ -70,15 +78,20 @@ plots$tSNE.DE <- ggplot2::ggplot(TSNE.AbiEnza, ggplot2::aes(x = X1, y = X2, fill
 # Heatmap.
 heatData <- countData[rownames(countData) %in% AbiEnza.DE$SYMBOL,]
 
+# Determine repeated biopsies.
+repeaters <- data.frame(hmfPatientId = gsub('A$|B$', '', colnames(countData))) %>% dplyr::group_by(hmfPatientId) %>% dplyr::add_tally()
+repeaters <- repeaters %>% dplyr::mutate(hmfPatientId2 = ifelse(n > 1, hmfPatientId, 'Single'))
+
 # Column annotation.
-annotation.row <- data.frame('Direction' = factor(ifelse(colnames(t(heatData)) %in% (AbiEnza.DE %>% dplyr::filter(`log2FoldChange (Poor vs. Good)` >= 0))$SYMBOL, 'Up-regulated in Bad Responders', 'Down-regulated in Bad Responders')), row.names = colnames(t(heatData)))
+annotation.row <- data.frame('Direction' = factor(ifelse(colnames(t(heatData)) %in% AbiEnza.DE$SYMBOL, 'Up-regulated in Bad Responders', 'Down-regulated in Bad Responders')), row.names = colnames(t(heatData)))
 annotation.col <- data.frame(
   'Responder.category' = DESeq2Counts.AbiEnza$Responder,
-  'ERG.fusion' = DESeq2Counts.AbiEnza$hasGenomicERG,
+  'Patient' = repeaters$hmfPatientId2,
+  'HasPretreatment' = DESeq2Counts.AbiEnza$pretreatmentAbiEnzaApa,
   'Treatment' = DESeq2Counts.AbiEnza$treatment.Generalized,
   'Treatment.duration' = DESeq2Counts.AbiEnza$treatmentDurationInDays,
   'Biopsy.site' = DESeq2Counts.AbiEnza$biopsySite.Generalized,
-  row.names = DESeq2Counts.AbiEnza$sampleId
+  row.names = colnames(countData)
 )
 
 # Clean-up annotations.
@@ -88,11 +101,12 @@ annotation.col <- annotation.col %>% dplyr::mutate(Treatment.duration = ifelse(i
 # Colors of the annotations.
 annotation.colors <- list(
   'Direction' = c('Up-regulated in Bad Responders' = '#D03C3F', 'Down-regulated in Bad Responders' = '#5EA153'),
-  'Responder.category' = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73'),
+  'Responder.category' = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73', 'Repeat' = 'grey'),
   'Biopsy.site' = c('Liver' = '#FF3500', 'Bone' = '#FEFEFE', 'Other' = '#4CA947', 'Lung' = '#9E4CD7', 'Lymph node' = '#0A6C94', 'Soft tissue' = '#EDAEAE'),
-  'ERG.fusion' = c('Yes' = '#2F385E', 'No' = '#FFFFFF'),
   'Treatment' = c('Abiraterone' = '#2a7fff', 'Enzalutamide' = '#ff7f2a'),
-  'Treatment.duration' = RColorBrewer::brewer.pal(9, 'Greens')
+  'Patient' = c('Single' = 'white', 'HMF001925' = 'red', 'HMF000376' = 'blue', 'HMF001378' = 'purple', 'HMF000429' = 'green'),
+  'Treatment.duration' = RColorBrewer::brewer.pal(9, 'Greens'),
+  'HasPretreatment' = c('Yes' = 'pink', 'No' = 'white')
 )
 
 # Plot heatmap.
@@ -110,9 +124,3 @@ pheatmap::pheatmap(
   cutree_rows = 2, cutree_cols = 2
 )
 
-
-# Combine plots -----------------------------------------------------------
-
-plots$tSNE.All + plots$tSNE.DE + 
-  patchwork::plot_layout(guides = 'collect', nrow = 2) +
-  patchwork::plot_annotation(tag_levels = 'a')
