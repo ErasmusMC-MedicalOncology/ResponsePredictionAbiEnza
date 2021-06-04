@@ -15,6 +15,7 @@ source('R/3.Figures/misc_Themes.R')
 
 # Load metadata of the Abi/Enza-treated patients.
 load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
+load('/mnt/data2/hartwig/DR71/Apr2021/RData/DR71.MetaData.RData')
 
 # Load DE-Genes from DESeq2.
 AbiEnza.DE <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xlsx', sheet = 'Differential Expression') %>% dplyr::filter(`Significant Threshold` == 'Significant')
@@ -79,14 +80,24 @@ plots$tSNE.All + plots$tSNE.DE +
 heatData <- countData[rownames(countData) %in% AbiEnza.DE$SYMBOL,]
 
 # Determine repeated biopsies.
-repeaters <- data.frame(hmfPatientId = gsub('A$|B$', '', colnames(countData))) %>% dplyr::group_by(hmfPatientId) %>% dplyr::add_tally()
-repeaters <- repeaters %>% dplyr::mutate(hmfPatientId2 = ifelse(n > 1, hmfPatientId, 'Single'))
+repeaters <- data.frame(
+  hmfSampleId = colnames(countData),
+  hmfPatientId = gsub('A$|B$', '', colnames(countData))
+  ) %>% 
+  dplyr::left_join(DR71.MetaData$sampleInfo) %>% 
+  dplyr::mutate(biopsyId = gsub('.*T', 'T', sample)) %>% 
+  dplyr::group_by(hmfPatientId) %>% 
+  dplyr::add_tally() %>% 
+  dplyr::ungroup()
+
+repeaters <- repeaters %>% dplyr::mutate(hmfPatientId2 = ifelse(n > 1, hmfPatientId, 'Single'), biopsyId =  ifelse(n > 1, biopsyId, NA))
 
 # Column annotation.
-annotation.row <- data.frame('Direction' = factor(ifelse(colnames(t(heatData)) %in% AbiEnza.DE$SYMBOL, 'Up-regulated in Bad Responders', 'Down-regulated in Bad Responders')), row.names = colnames(t(heatData)))
+annotation.row <- data.frame('Direction' = factor(ifelse(colnames(t(heatData)) %in% AbiEnza.DE$SYMBOL, 'Up-regulated in bad responders', 'Down-regulated in bad responders')), row.names = colnames(t(heatData)))
 annotation.col <- data.frame(
   'Responder.category' = DESeq2Counts.AbiEnza$Responder,
   'Patient' = repeaters$hmfPatientId2,
+  'BiopsyId' = repeaters$biopsyId,
   'HasPretreatment' = DESeq2Counts.AbiEnza$pretreatmentAbiEnzaApa,
   'Treatment' = DESeq2Counts.AbiEnza$treatment.Generalized,
   'Treatment.duration' = DESeq2Counts.AbiEnza$treatmentDurationInDays,
@@ -100,11 +111,12 @@ annotation.col <- annotation.col %>% dplyr::mutate(Treatment.duration = ifelse(i
 
 # Colors of the annotations.
 annotation.colors <- list(
-  'Direction' = c('Up-regulated in Bad Responders' = '#D03C3F', 'Down-regulated in Bad Responders' = '#5EA153'),
+  'Direction' = c('Up-regulated in bad responders' = '#D03C3F', 'Down-regulated in bad responders' = '#5EA153'),
   'Responder.category' = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73', 'Repeat' = 'grey'),
   'Biopsy.site' = c('Liver' = '#FF3500', 'Bone' = '#FEFEFE', 'Other' = '#4CA947', 'Lung' = '#9E4CD7', 'Lymph node' = '#0A6C94', 'Soft tissue' = '#EDAEAE'),
   'Treatment' = c('Abiraterone' = '#2a7fff', 'Enzalutamide' = '#ff7f2a'),
-  'Patient' = c('Single' = 'white', 'HMF001925' = 'red', 'HMF000376' = 'blue', 'HMF001378' = 'purple', 'HMF000429' = 'green'),
+  'Patient' = c("Single" = 'white', "HMF001410" = '#7FC97F', "HMF001925" = 'skyblue', "HMF000679" = '#BEAED4', "HMF000376" = '#FDC086', "HMF000222" = '#FFFF99', "HMF001378" = '#386CB0', "HMF000790" = '#F0027F', "HMF000429" = '#666666', "HMF001806"= '#BF5B17'),
+  'BiopsyId' = c('T' = '#0B4155', 'TII' = '#B7D03B', 'TIII' = '#19876D'),
   'Treatment.duration' = RColorBrewer::brewer.pal(9, 'Greens'),
   'HasPretreatment' = c('Yes' = 'pink', 'No' = 'white')
 )

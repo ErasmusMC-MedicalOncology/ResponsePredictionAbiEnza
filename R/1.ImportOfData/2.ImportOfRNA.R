@@ -25,7 +25,7 @@ AbiEnza.Metadata <- AbiEnza.Metadata %>% dplyr::mutate(responderCategory.DESeq2 
 
 # Additional repeated biopsies.
 repeatedBiopsies <- DR71.MetaData$sampleInfo %>% 
-  dplyr::filter(sample %in% c('DRUP01050020T', 'DRUP01070071T', 'DRUP01070057T', 'DRUP01010097T')) %>% 
+  dplyr::filter(sample %in% c('DRUP01050020T', 'DRUP01070071T', 'DRUP01070057T', 'DRUP01010097T', 'CPCT02070055TII', 'CPCT02020351TII', 'CPCT02070107TII', 'CPCT02010692TII', 'CPCT02140041TII', 'CPCT02140041TIII')) %>% 
   dplyr::select(sample, hmfSampleId)
 
 
