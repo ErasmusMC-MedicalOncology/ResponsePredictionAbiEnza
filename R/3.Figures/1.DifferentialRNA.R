@@ -135,4 +135,3 @@ pheatmap::pheatmap(
   color = colorRampPalette(c('green', 'white', 'red'))(101), 
   cutree_rows = 2, cutree_cols = 2
 )
-
