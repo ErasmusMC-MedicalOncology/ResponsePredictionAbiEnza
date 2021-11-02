@@ -9,7 +9,7 @@ library(R2CPCT)
 library(DESeq2)
 
 # Load metadata of the Abi/Enza-treated patients.
-load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
+load('/mnt/onco0002/repository/HMF/DR71/Oct2021/RData/AbiEnza.Metadata.RData')
 
 # Load metadata of the DR-071 cohort.
 load('/mnt/data2/hartwig/DR71/Apr2021/RData/DR71.MetaData.RData')
@@ -67,4 +67,4 @@ DESeq2Counts.AbiEnza <- DESeq2::DESeqDataSetFromMatrix(countData = countData, co
 SummarizedExperiment::rowData(DESeq2Counts.AbiEnza)$ENSEMBL <- BiocGenerics::rownames(DESeq2Counts.AbiEnza)
 SummarizedExperiment::rowData(DESeq2Counts.AbiEnza) <- tibble::as_tibble(SummarizedExperiment::rowData(DESeq2Counts.AbiEnza)) %>% dplyr::left_join(tibble::as_tibble(S4Vectors::mcols(R2CPCT::GENCODE.v35)) %>% dplyr::distinct(SYMBOL, ENSEMBL), by = 'ENSEMBL')
 
-save(DESeq2Counts.AbiEnza, file = '/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/DESeq2Counts.AbiEnza.RData')
+save(DESeq2Counts.AbiEnza, file = '/mnt/onco0002/repository/HMF/DR71/Oct2021/RData/DESeq2Counts.AbiEnza.RData')

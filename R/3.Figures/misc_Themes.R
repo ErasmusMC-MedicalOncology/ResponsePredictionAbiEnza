@@ -67,3 +67,36 @@ geomJob_HalfHalfBox_Small <- list(
   gghalves::geom_half_point(side = 'r', color = 'black', alpha = .66, size = .75, shape = 21, transformation = ggbeeswarm::position_quasirandom(width = .075)),
   ggplot2::stat_summary(fun = min, colour = 'black', geom = 'text', size = 3, show.legend = FALSE, hjust = 1.25, angle = 90)
 )
+
+# Color palette(s) --------------------------------------------------------
+
+colorPalette <- c(
+  # Tissue types.
+  'NAP' = '#2a6ea9', 
+  'PRAD' = '#e01b46',
+  
+  # Classes.
+  'Bad Responder (≤100 days)' = '#E69F00', 
+  'Good Responder (>100 days)' = '#019E73',
+  
+  # Treatments
+  'Enzalutamide' = '#2c7fb8', 
+  'Abiraterone' = '#D93A28',
+  
+  # SV Classes.
+  'Translocations' = '#375D96', 
+  'Deletions' = '#ff8c00', 
+  'Tandem Duplications' ='#fc6769', 
+  'Insertions' = 'yellow', 
+  'Inversions' = 'skyblue', 
+  'Singles' = 'grey75',
+  
+  # Biopsy sites
+  'Liver' = '#FF3500', 
+  'Bone' = '#FEFEFE', 
+  'Other' = '#4CA947', 
+  'Lung' = '#9E4CD7', 
+  'Lymph node' = '#0A6C94', 
+  'Soft tissue' = '#EDAEAE'
+  
+)

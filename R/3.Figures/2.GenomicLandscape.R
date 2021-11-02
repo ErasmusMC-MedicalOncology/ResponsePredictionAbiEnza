@@ -1,19 +1,22 @@
 # Author:    Job van Riet
-# Date:      03-05-21
+# Date:      2-11-21
 # Function:  Genomic overview of the Abi/Enza-treated patients.
 
+# Libraries ----
 
-# Import data and themes --------------------------------------------------
+library(R2CPCT)
+library(ggplot2)
+library(extrafont)
+library(patchwork)
 
-# Load ggplot2 themes.
+# Load themes.
 source('R/3.Figures/misc_Themes.R')
 
 # Load metadata of the Abi/Enza-treated patients.
-load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
+load('/mnt/onco0002/repository/HMF/DR71/Oct2021/RData/AbiEnza.Metadata.RData')
 
-# Load WGS data.
-load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Results.RData')
-
+# Retrieve WGS-data.
+load('/mnt/onco0002/repository/HMF/DR71/Oct2021/RData/AbiEnza.Results.RData')
 
 # Main Figure - Genomic Landscape -----------------------------------------
 
@@ -22,6 +25,7 @@ tracks.landscape <- list()
 # Sort on Abi/Enza treatment duration.
 orderSamples <- AbiEnza.Metadata %>%
   dplyr::inner_join(AbiEnza.Results$mutationalBurden, by = c('sampleId' = 'sample')) %>% 
+  dplyr::mutate(Responder = factor(Responder, levels = c('Good Responder (>100 days)', 'Bad Responder (≤100 days)'))) %>% 
   dplyr::arrange(Responder, -treatmentDurationInDays) %>%
   dplyr::pull(sampleId)
 
@@ -31,10 +35,10 @@ orderSamples <- AbiEnza.Metadata %>%
 tracks.landscape$Responder <- AbiEnza.Metadata %>%
   dplyr::distinct(sampleId, Responder) %>%
   dplyr::mutate(sampleId = factor(sampleId, levels = orderSamples)) %>%
-  ggplot2::ggplot(., ggplot2::aes(x = sampleId, y = 'Responder category', fill = Responder)) +
+  ggplot2::ggplot(., ggplot2::aes(x = sampleId, y = 'Responder class', fill = Responder)) +
   ggplot2::geom_tile(width = .8, colour = 'grey25', lwd = .25, na.rm = T) +
   ggplot2::labs(y = NULL, x = NULL) +
-  ggplot2::scale_fill_manual(values = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73', 'Unknown Responder' = '#999999'), na.value = 'white', guide = ggplot2::guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, nrow = 1, keywidth = 0.5, keyheight = 0.5)) +
+  ggplot2::scale_fill_manual(values = colorPalette, breaks = unique(AbiEnza.Metadata$Responder), guide = guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, ncol = 1, keywidth = 0.5, keyheight = 0.5)) +
   themeAnno_Job
 
 
@@ -49,8 +53,8 @@ tracks.landscape$treatmentDuration <- AbiEnza.Metadata %>%
   ggplot2::geom_bar(stat = 'identity', color = 'black', lwd = .33, width = .8) +
   ggplot2::scale_y_continuous(expand = c(0,0), breaks = c(0, 50, 100, 200, 300, 400, 500, 600), limits = c(0, 601)) +
   ggplot2::geom_hline(yintercept = 100, color = 'red', lty = 'dotted', lwd = .5) +
-  ggplot2::scale_fill_manual('Treatment', values = c('Abiraterone' = '#2a7fff', 'Enzalutamide' = '#ff7f2a'), guide = ggplot2::guide_legend(title.position = 'top', title.hjust = 0.5, ncol = 1, keywidth = 0.5, keyheight = 0.5)) +
-  ggplot2::labs(y = 'Treatment duration<br><span style = "font-size:5pt">(in nr. of days)</span>') +
+  ggplot2::scale_fill_manual(values = colorPalette, breaks = unique(AbiEnza.Metadata$treatment), guide = guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, ncol = 1, keywidth = 0.5, keyheight = 0.5)) +
+  ggplot2::labs(y = 'Treatment duration<br><span style = "font-size:5pt">(in days)</span>') +
   themeTrack_Job
 
 
@@ -62,7 +66,7 @@ tracks.landscape$TMB <- AbiEnza.Results$mutationalBurden %>%
   #Plot.
   ggplot2::ggplot(., ggplot2::aes(x = sample, y = Genome.TMB)) +
   ggplot2::geom_bar(stat = 'identity', fill = '#F75658', color = 'black', lwd = .33, width = .8) +
-  ggplot2::scale_y_continuous(expand = c(0,0), breaks = c(0, 2.5, 5, 10, 25, 50, 100), limits = c(0, 115)) +
+  ggplot2::scale_y_continuous(expand = c(0,0), breaks = c(0, 2.5, 5, 10, 25, 50, 100), labels = c(0, 2.5, 5, 10, 25, 50, 100), limits = c(0, 115)) +
   ggplot2::geom_hline(yintercept = 10, color = 'black', lty = 'dotted', lwd = .5) +
   ggplot2::labs(y = 'Tumor Mutational Burden<br><span style = "font-size:5pt">(Genome-wide; log<sub>10</sub>)</span>') +
   ggplot2::coord_trans(y = scales::pseudo_log_trans()) +
@@ -70,14 +74,14 @@ tracks.landscape$TMB <- AbiEnza.Results$mutationalBurden %>%
 
 ## Track - Overview of structural variants. ----
 
-tracks.landscape$SV <-  AbiEnza.Results$mutationalBurden %>%
+tracks.landscape$SV <- AbiEnza.Results$mutationalBurden %>%
   dplyr::distinct(sample, totalSV) %>%
   dplyr::mutate(sample = factor(sample, levels = orderSamples)) %>%
   #Plot.
   ggplot2::ggplot(., ggplot2::aes(x = sample, y = totalSV)) +
   ggplot2::geom_bar(stat = 'identity', fill = '#00AF66', color = 'black', lwd = .33, width = .8) +
   ggplot2::scale_y_continuous(expand = c(0,0), breaks = c(0, 100, 250, 500, 1000, 1500, 2000), limits = c(0, 2100)) +
-  ggplot2::labs(y = 'Nr. of structural variants<br><span style = "font-size:5pt">(Genome-wide)') +
+  ggplot2::labs(y = 'No. of structural variants<br><span style = "font-size:5pt">(Genome-wide)') +
   themeTrack_Job
 
 
@@ -103,7 +107,7 @@ tracks.landscape$SV.Cat <- AbiEnza.Results$mutationalBurden %>%
   ggplot2::ggplot(., ggplot2::aes(x = sample, y = value.Rel, fill = type)) +
   ggplot2::geom_bar(stat = 'identity', color = 'black', lwd = .33, width = .8) +
   ggplot2::scale_y_continuous(expand = c(0,0), labels = scales::percent, breaks = c(0, .25, .5, .75, 1)) +
-  ggplot2::scale_fill_manual('Structural variant categories', values = c('Translocations' = '#375D96', 'Deletions' = '#ff8c00', 'Tandem Duplications' ='#fc6769', 'Insertions' = 'yellow', 'Inversions' = 'skyblue', 'Singles' = 'grey75'), guide = ggplot2::guide_legend(title.position = 'top', title.hjust = 0.5, ncol = 1, keywidth = 0.5, keyheight = 0.5)) +
+  ggplot2::scale_fill_manual(values = colorPalette, breaks = c('Deletions', 'Inversions', 'Tandem Duplications', 'Translocations', 'Insertions', 'Singles'), guide = guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, ncol = 1, keywidth = 0.5, keyheight = 0.5)) +
   ggplot2::labs(y = 'Structural variants<br><span style = "font-size:5pt">Relative categories</span>') +
   themeTrack_Job
 
@@ -127,7 +131,7 @@ tracks.landscape$Ploidy <- AbiEnza.Results$mutationalBurden %>%
 
 ## Track - Mutational Signatures ----
 
-tracks.landscape$MutSigs.SNV <- R2CPCT::plotMutationalSignaturesCOSMIC(mutSigs = AbiEnza.Results$mutSigs$SNV, orderSamples =  as.character(orderSamples), minContrib = 5, combineSigs = T) + themeTrack_Job
+tracks.landscape$MutSigs.SNV <- plotMutationalSignaturesCOSMIC(mutSigs = AbiEnza.Results$mutSigs$SNV, orderSamples = as.character(orderSamples), minContrib = 5, combineSigs = T) + themeTrack_Job
 
 
 ## Track - MSI ----
@@ -183,22 +187,8 @@ tracks.landscape$biopsySite <- AbiEnza.Metadata %>%
   ggplot2::ggplot(., ggplot2::aes(x = sampleId, y = 'Biopsy site', fill = biopsySite.Generalized)) +
   ggplot2::geom_tile(width = .8, colour = 'grey25', lwd = .25, na.rm = T) +
   ggplot2::labs(y = NULL, x = NULL) +
-  ggplot2::scale_fill_manual(values = c('Liver' = '#FF3500', 'Bone' = '#FEFEFE', 'Other' = '#4CA947', 'Lung' = '#9E4CD7', 'Lymph node' = '#0A6C94', 'Soft tissue' = '#EDAEAE'), na.value = 'black', guide = ggplot2::guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, nrow = 1, keywidth = 0.5, keyheight = 0.5)) +
+  ggplot2::scale_fill_manual(values = colorPalette, breaks = unique(AbiEnza.Metadata$biopsySite.Generalized), guide = guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, ncol = 2, keywidth = 0.5, keyheight = 0.5)) +
   themeAnno_Job
-
-
-## Track - ERG ----
-
-tracks.landscape$ERG <- AbiEnza.Metadata %>%
-  dplyr::select(sampleId, hasGenomicERG) %>%
-  dplyr::mutate(
-    sampleId = factor(sampleId, levels = orderSamples)
-  ) %>%
-  ggplot2::ggplot(., ggplot2::aes(x = sampleId, y = 'ERG Fusion', fill = hasGenomicERG)) +
-  ggplot2::geom_tile(width = .8, colour = 'grey25', lwd = .25, na.rm = T) +
-  ggplot2::labs(y = NULL, x = NULL) +
-  ggplot2::scale_fill_manual(values = c('Yes' = '#2F385E', 'No' = 'white')) +
-  themeAnno_Job + ggplot2::theme(legend.position = 'none')
 
 
 ## Track - Matching RNA. ----
@@ -228,91 +218,7 @@ tracks.landscape$Responder +
   tracks.landscape$HRD +
   tracks.landscape$Chromothripsis +
   tracks.landscape$biopsySite +
-  tracks.landscape$ERG +
   tracks.landscape$RNA +
-  patchwork::plot_layout(guides = 'collect', ncol = 1, heights = c(.2, rep(1, 6), rep(.2, 6))) +
+  patchwork::plot_layout(guides = 'collect', ncol = 1, heights = c(.2, rep(1, 6), rep(.2, 5))) +
   patchwork::plot_annotation(tag_levels = 'a')
 
-
-# Differences in genomic landscape ----------------------------------------
-
-## Perform statistical tests. ----
-statTests <- list()
-
-statTests$TMB <- AbiEnza.Results$mutationalBurden %>% 
-  dplyr::select(sampleId = sample, Genome.TMB) %>% 
-  dplyr::inner_join(AbiEnza.Metadata) %>% 
-  rstatix::pairwise_wilcox_test(Genome.TMB ~ Responder, exact = T, p.adjust.method = 'none', detailed = T, alternative = 'two.sided', paired = F) %>%
-  rstatix::add_significance(cutpoints = c(0, 0.001, 0.01, 0.05, 1), symbols = c('***', '**', '*', 'ns'))
-
-statTests$SV <- AbiEnza.Results$mutationalBurden %>% 
-  dplyr::select(sampleId = sample, totalSV) %>% 
-  dplyr::inner_join(AbiEnza.Metadata) %>% 
-  rstatix::pairwise_wilcox_test(totalSV ~ Responder, exact = T, p.adjust.method = 'none', detailed = T, alternative = 'two.sided', paired = F) %>%
-  rstatix::add_significance(cutpoints = c(0, 0.001, 0.01, 0.05, 1), symbols = c('***', '**', '*', 'ns'))
-
-# Get IQR.
-AbiEnza.Results$mutationalBurden %>% 
-  dplyr::select(sampleId = sample, Genome.TMB) %>% 
-  dplyr::inner_join(AbiEnza.Metadata) %>% 
-  dplyr::group_by(Responder) %>% 
-  dplyr::summarise(
-    Q1 = stats::quantile(Genome.TMB, probs = .25),
-    Q3 = stats::quantile(Genome.TMB, probs = .75),
-    median = median(Genome.TMB)
-  )
-
-AbiEnza.Results$mutationalBurden %>% 
-  dplyr::select(sampleId = sample, totalSV) %>% 
-  dplyr::inner_join(AbiEnza.Metadata) %>% 
-  dplyr::group_by(Responder) %>% 
-  dplyr::summarise(
-    Q1 = stats::quantile(totalSV, probs = .25),
-    Q3 = stats::quantile(totalSV, probs = .75),
-    median = median(totalSV)
-  )
-
-## Generate figures. ----
-
-plotsDiff <- list()
-
-### Genome-wide TMB per Responder group. ----
-plotsDiff$TMB <- AbiEnza.Results$mutationalBurden %>% 
-  dplyr::select(sampleId = sample, Genome.TMB) %>% 
-  dplyr::inner_join(AbiEnza.Metadata) %>% 
-  dplyr::group_by(Responder) %>%
-  dplyr::mutate(median = round(median(Genome.TMB), 2)) %>%
-  dplyr::ungroup() %>%
-  ggplot2::ggplot(., ggplot2::aes(x = Responder, y = Genome.TMB, fill = Responder, label = median)) +
-  gghalves::geom_half_boxplot(side = 'l', alpha = .3, outlier.shape = NA, notch = F, show.legend = F) +
-  gghalves::geom_half_point_panel(side = 'r', position = ggbeeswarm::position_quasirandom(width = .15), size = 1.5, shape = 21, color = 'black', lwd = .01) +
-  ggplot2::scale_y_continuous(trans = scales::pseudo_log_trans(), expand = c(0,0), breaks = c(0:5, 10, 25, 50, 100), limits = c(0, 175)) +
-  ggplot2::scale_fill_manual(values = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73'), guide = ggplot2::guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, nrow = 1, keywidth = 0.5, keyheight = 0.5)) +
-  ggplot2::stat_summary(fun = median, colour = 'black', geom = 'text', size = 3, show.legend = FALSE, vjust = -4, angle = 90) +
-  ggplot2::labs(x = NULL, y = 'Tumor Mutational Burden<br><span style = "font-size:5pt">(Genome-wide; log<sub>10</sub>)</span>') +
-  ggpubr::geom_bracket(ggplot2::aes(xmin = group1, xmax = group2, label = p.adj.signif, fill = NULL, color = NULL, shape = NULL), data = statTests$TMB, y.position = 4.7, step.increase = .02, tip.length = .01) +
-  theme_Job
-
-### Total nr. of SV per Responder group. ----
-plotsDiff$SV <- AbiEnza.Results$mutationalBurden %>% 
-  dplyr::select(sampleId = sample, totalSV) %>% 
-  dplyr::inner_join(AbiEnza.Metadata) %>% 
-  dplyr::group_by(Responder) %>%
-  dplyr::mutate(median = round(median(totalSV), 0)) %>%
-  dplyr::ungroup() %>%
-  ggplot2::ggplot(., ggplot2::aes(x = Responder, y = totalSV, fill = Responder, label = median)) +
-  gghalves::geom_half_boxplot(side = 'l', alpha = .3, outlier.shape = NA, notch = F, show.legend = F) +
-  gghalves::geom_half_point_panel(side = 'r', position = ggbeeswarm::position_quasirandom(width = .15), size = 1.5, shape = 21, color = 'black', lwd = .01) +
-  ggplot2::scale_y_continuous(trans = scales::pseudo_log_trans(), expand = c(0,0), breaks = c(0, 50, 100, 250, 500, 1000, 1500, 2000, 2500), limits = c(50, 5000)) +
-  ggplot2::scale_fill_manual(values = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73'), guide = ggplot2::guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, nrow = 1, keywidth = 0.5, keyheight = 0.5)) +
-  ggplot2::stat_summary(fun = median, colour = 'black', geom = 'text', size = 3, show.legend = FALSE, vjust = -4, angle = 90) +
-  ggplot2::labs(x = NULL, y = 'Nr. of structural variants<br><span style = "font-size:5pt">(Genome-wide; log10)') +
-  ggpubr::geom_bracket(ggplot2::aes(xmin = group1, xmax = group2, label = p.adj.signif, fill = NULL, color = NULL, shape = NULL), data = statTests$SV, y.position = 2100, step.increase = .02, tip.length = .01) +
-  theme_Job
-
-
-### Combine plots. ----
-
-plotsDiff$TMB + plotsDiff$SV +   
-  patchwork::plot_layout(guides = 'collect', ncol = 2) +
-  patchwork::plot_annotation(tag_levels = 'a')
