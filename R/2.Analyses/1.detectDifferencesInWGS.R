@@ -168,6 +168,34 @@ fisherData$p.adj <- stats::p.adjust(fisherData$p, method = 'BH')
 AbiEnza.Results$differencesWGS$mutExcl <- fisherData %>% dplyr::arrange(p.adj)
 
 
-# Save to object --------------------------------------------------------------------------------------------------
+# Differences - Mut. Sigs. ----
+
+zz = AbiEnza.Results$mutSigs$SNV$relativeContribution %>% 
+  dplyr::inner_join(AbiEnza.Metadata, by = 'sampleId') %>% 
+  dplyr::group_by(Responder, Signature) %>% 
+  dplyr::summarise(meanSig = median(relContribution, na.omit = T)) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::filter(meanSig >= 1) %>% 
+  dplyr::distinct(Signature) %>% 
+  dplyr::pull(Signature)
+
+z = AbiEnza.Results$mutSigs$SNV$relativeContribution %>% 
+  dplyr::inner_join(AbiEnza.Metadata, by = 'sampleId') %>% 
+  dplyr::filter(Signature %in% zz) %>% 
+  base::droplevels() %>% 
+  dplyr::group_by(Signature) %>% 
+  rstatix::pairwise_wilcox_test(relContribution ~ Responder, p.adjust.method = 'none', detailed = T) %>% 
+  dplyr::ungroup() %>% 
+  rstatix::adjust_pvalue(method = 'BH') %>% 
+  rstatix::add_significance(cutpoints = c(0, 0.001, 0.01, 0.05, 1), symbols = c('***', '**', '*', 'ns'))
+
+AbiEnza.Results$mutSigs$SNV$relativeContribution %>% 
+  dplyr::inner_join(AbiEnza.Metadata, by = 'sampleId') %>% 
+  dplyr::filter(Signature %in% z[z$p.adj <0.05,]$Signature) %>% 
+  ggplot(., aes(x = Signature, y = relContribution, fill = Responder)) +
+  geom_boxplot()
+
+
+s# Save to object --------------------------------------------------------------------------------------------------
 
 save(AbiEnza.Results, file = '/mnt/onco0002/repository/HMF/DR71/Oct2021/RData/AbiEnza.Results.RData')
