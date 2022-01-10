@@ -71,13 +71,11 @@ geomJob_HalfHalfBox_Small <- list(
 # Color palette(s) --------------------------------------------------------
 
 colorPalette <- c(
-  # Tissue types.
-  'NAP' = '#2a6ea9', 
-  'PRAD' = '#e01b46',
-  
+
   # Classes.
-  'Bad Responder (≤100 days)' = '#E69F00', 
-  'Good Responder (>100 days)' = '#019E73',
+  'Bad Responder (≤100 days)' = '#8B0000', 
+  'Ambiguous Responder (101-179 days)' = '#FFFFE0',
+  'Good Responder (≥180 days)' = '#008080',
   
   # Treatments
   'Enzalutamide' = '#2c7fb8', 

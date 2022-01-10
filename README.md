@@ -1,6 +1,6 @@
 # All utilized and custom code used in the Response Predictor to Abi/Enza.
 
-This repository contains the custom code (R) used to perform all analysis of the study as further detailed by De Jong and Danyi et al. in <JOURNAL> (2021): [TITLE](https://www.google.com/).
+This repository contains the custom code (R) used to perform all analysis of the study as further detailed by De Jong and Danyi et al. in <JOURNAL> (2022): [TITLE](https://www.google.com/).
 
 All processed (and cleaned) data as-used in the presented analysis and figures has been published alongside the manuscript (Suppl. Table 1).
 

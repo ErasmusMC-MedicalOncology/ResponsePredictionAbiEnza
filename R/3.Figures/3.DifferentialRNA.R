@@ -1,137 +1,180 @@
 # Author:    Job van Riet
-# Date:      04-06-21
+# Date:      06-01-22
 # Function:  Figure of the differential analysis between good vs. bad responders on Abi/Enza-treatment.
 
 # Set seed for reproducibility of t-SNE
 set.seed(708813)
 
-# Libraries ---------------------------------------------------------------
+# Libraries and data. ----
 
 library(R2CPCT)
 library(DESeq2)
+library(ggplot2)
 
 # Load ggplot2 themes.
 source('R/3.Figures/misc_Themes.R')
 
 # Load metadata of the Abi/Enza-treated patients.
-load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/AbiEnza.Metadata.RData')
-load('/mnt/data2/hartwig/DR71/Apr2021/RData/DR71.MetaData.RData')
+load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
+load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')
 
-# Load DE-Genes from DESeq2.
-AbiEnza.DE <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xlsx', sheet = 'Differential Expression') %>% dplyr::filter(`Significant Threshold` == 'Significant')
-
-# Retrieve RNA-Seq counts.
-load('/mnt/data2/hartwig/DR71/Apr2021_AbiEnza/RData/DESeq2Counts.AbiEnza.RData')
+# Function to generate Z-scores.
+makeZ <- function (x){
+  m = apply(x, 1, mean, na.rm = T)
+  s = apply(x, 1, sd, na.rm = T)
+  return((x - m)/s)
+}
 
 # List to contain plots.
 plots <- list()
 
 
-# Generate t-SNE of Poor vs. Good responders ------------------------------
+# Generate t-SNE of responders. ----
 
 ## Retrieve VST-counts. ----
-countData <- SummarizedExperiment::assay(DESeq2::vst(DESeq2Counts.AbiEnza, blind = T, nsub = 2500))
-rownames(countData) <- rowData(DESeq2Counts.AbiEnza)$SYMBOL
+countData <- SummarizedExperiment::assay(DESeq2::vst(AbiEnza.RNASeq$DESeq2, blind = T))
+rownames(countData) <- SummarizedExperiment::rowData(AbiEnza.RNASeq$DESeq2)$SYMBOL
 
-countData.NoRepeats <- countData[,DESeq2Counts.AbiEnza$responderCategory.DESeq2 != 'Repeat']
+sigGenes <- AbiEnza.RNASeq$DESeq2Results %>% dplyr::filter(AbiEnza.RNASeq$DESeq2Results$isSig == 'Significant')
+countData <- countData[rownames(countData) %in% sigGenes$SYMBOL,]
 
+## Cluster rows and columns. ----
 
-## Perform T-SNE on DE-genes. ----
-TSNE.AbiEnza.All <- Rtsne::Rtsne(t(countData.NoRepeats), check_duplicates = T, pca = T, theta = .5, perplexity = 9, dims = 2, max_iter = 1E5, num_threads = 20)
-TSNE.AbiEnza.All <- TSNE.AbiEnza.All$Y %>% data.frame()
-TSNE.AbiEnza.All$Responder <- DESeq2Counts.AbiEnza[,DESeq2Counts.AbiEnza$responderCategory.DESeq2 != 'Repeat']$Responder
-TSNE.AbiEnza.All$Sample <- DESeq2Counts.AbiEnza[,DESeq2Counts.AbiEnza$responderCategory.DESeq2 != 'Repeat']$sampleId
+orderGenes <- stats::hclust(stats::dist(makeZ(countData), method = 'canberra'), method = 'ward.D2')
+orderSamples <- stats::hclust(stats::dist(t(makeZ(countData)), method = 'canberra'), method = 'ward.D2')
 
-## Perform T-SNE on DE-genes. ----
-TSNE.AbiEnza <- Rtsne::Rtsne(t(countData.NoRepeats[rownames(countData.NoRepeats) %in% AbiEnza.DE$SYMBOL,]), check_duplicates = T, pca = T, theta = .5, perplexity = 9, dims = 2, max_iter = 1E5, num_threads = 20)
-TSNE.AbiEnza <- TSNE.AbiEnza$Y %>% data.frame()
-TSNE.AbiEnza$Responder <- DESeq2Counts.AbiEnza[,DESeq2Counts.AbiEnza$responderCategory.DESeq2 != 'Repeat']$Responder
-TSNE.AbiEnza$Sample <- DESeq2Counts.AbiEnza[,DESeq2Counts.AbiEnza$responderCategory.DESeq2 != 'Repeat']$sampleId
+### Add ordering to counts. ----
 
+heatData <- reshape2::melt(makeZ(countData)) %>% 
+  dplyr::mutate(
+    Var1 = factor(Var1, levels = orderGenes$labels[orderGenes$order]),
+    Var2 = factor(Var2, levels = orderSamples$labels[orderSamples$order])
+  )
 
-## Plot t-SNE ----
+### Generate dendograms. ----
 
-plots$tSNE.All <- ggplot2::ggplot(TSNE.AbiEnza.All, ggplot2::aes(x = X1, y = X2, fill = Responder)) +
-  ggplot2::geom_point(shape = 21, size = 2.5) +
-  ggplot2::scale_fill_manual(values = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73')) +
-  ggplot2::scale_shape_manual(values = c(21, 23)) +
-  ggplot2::labs(x = 't-SNE Dimension 1', y = 't-SNE Dimension 2') +
-  ggplot2::guides(fill = ggplot2::guide_legend(title = 'Responder Category', title.position = 'top', title.hjust = 0.5, ncol = 3, keywidth = 0.5, keyheight = 0.5)) +
-  theme_Job
+plots$dendro.genes <- ggdendro::ggdendrogram(orderGenes, rotate = T, labels = F) +
+  ggplot2::scale_y_discrete(expand=c(0, 0)) +
+  ggplot2::scale_x_discrete(expand=c(0.005, 0)) +
+  ggplot2::theme(
+    axis.text.x = ggplot2::element_blank(),
+    axis.text.y = ggplot2::element_blank(),
+  )
 
-plots$tSNE.DE <- ggplot2::ggplot(TSNE.AbiEnza, ggplot2::aes(x = X1, y = X2, fill = Responder)) +
-  ggplot2::geom_point(shape = 21, size = 2.5) +
-  ggplot2::scale_fill_manual(values = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73')) +
-  ggplot2::scale_shape_manual(values = c(21, 23)) +
-  ggplot2::labs(x = 't-SNE Dimension 1', y = 't-SNE Dimension 2') +
-  ggplot2::guides(fill = ggplot2::guide_legend(title = 'Responder Category', title.position = 'top', title.hjust = 0.5, ncol = 3, keywidth = 0.5, keyheight = 0.5)) +
-  theme_Job
-
-# Combine plots -----------------------------------------------------------
-
-plots$tSNE.All + plots$tSNE.DE + 
-  patchwork::plot_layout(guides = 'collect', nrow = 2) +
-  patchwork::plot_annotation(tag_levels = 'a')
+plots$dendro.samples <- ggdendro::ggdendrogram(orderSamples, labels = F) +
+  ggplot2::scale_y_discrete(expand=c(0, 0)) +
+  ggplot2::scale_x_discrete(expand=c(0.005, 0)) +
+  ggplot2::theme(
+    axis.text.x = ggplot2::element_blank(),
+    axis.text.y = ggplot2::element_blank(),
+  )
 
 
-# Generate heatmap --------------------------------------------------------
+## Generate annotation tracks. ----
 
-# Heatmap.
-heatData <- countData[rownames(countData) %in% AbiEnza.DE$SYMBOL,]
+### Treatment duration. ----
 
-# Determine repeated biopsies.
-repeaters <- data.frame(
-  hmfSampleId = colnames(countData),
-  hmfPatientId = gsub('A$|B$', '', colnames(countData))
+plots$TreatmentDuration <- AbiEnza.Metadata %>%
+  dplyr::distinct(hmfSampleId, Treatment, treatmentduration_days) %>%
+  dplyr::filter(hmfSampleId %in% levels(heatData$Var2)) %>% 
+  dplyr::mutate(hmfSampleId = factor(hmfSampleId, levels = levels(heatData$Var2))) %>%
+  #Plot.
+  ggplot2::ggplot(., ggplot2::aes(x = hmfSampleId, xend = hmfSampleId, yend = 0, y = treatmentduration_days, fill = Treatment)) +
+  ggplot2::geom_segment() +
+  ggplot2::geom_point(shape = 21, size = 1.25) +
+  ggplot2::scale_y_continuous(expand = c(0,0), trans = scales::sqrt_trans(), breaks = c(0, 100, 250, 500, 1000, 2000, 2500), limits = c(0, 2600)) +
+  ggplot2::geom_hline(yintercept = 180, color = 'black', lty = 15, lwd = 1) +
+  ggplot2::scale_fill_manual(values = colorPalette, breaks = unique(AbiEnza.Metadata$Treatment), guide = guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, ncol = 1, keywidth = 0.5, keyheight = 0.5)) +
+  ggplot2::labs(y = 'Treatment duration<br><span style = "font-size:5pt">(in days; √)</span>') +
+  themeTrack_Job
+
+### Responder class. ----
+
+plots$Responder <- AbiEnza.Metadata %>%
+  dplyr::distinct(hmfSampleId, Responder) %>%
+  dplyr::filter(hmfSampleId %in% levels(heatData$Var2)) %>% 
+  dplyr::mutate(hmfSampleId = factor(hmfSampleId, levels = levels(heatData$Var2))) %>%
+  ggplot2::ggplot(., ggplot2::aes(x = hmfSampleId, y = 'Responder class', fill = Responder)) +
+  ggplot2::geom_tile(width = .8, colour = 'grey25', lwd = .25, na.rm = T) +
+  ggplot2::labs(y = NULL, x = NULL) +
+  ggplot2::scale_fill_manual(values = colorPalette, breaks = unique(AbiEnza.Metadata$Responder), guide = guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, ncol = 1, keywidth = 0.5, keyheight = 0.5)) +
+  themeAnno_Job
+
+### Biopsy sites. ----
+
+plots$Biopsy <- AbiEnza.Metadata %>%
+  dplyr::distinct(hmfSampleId, Biopsysite_consolidated) %>%
+  dplyr::filter(hmfSampleId %in% levels(heatData$Var2)) %>% 
+  dplyr::mutate(hmfSampleId = factor(hmfSampleId, levels = levels(heatData$Var2))) %>%
+  #Plot.
+  ggplot2::ggplot(., ggplot2::aes(x = hmfSampleId, y = 'Biopsy site', fill = Biopsysite_consolidated)) +
+  ggplot2::geom_tile(width = .8, colour = 'grey25', lwd = .25, na.rm = T) +
+  ggplot2::labs(y = NULL, x = NULL) +
+  ggplot2::scale_fill_manual(values = colorPalette, breaks = unique(AbiEnza.Metadata$Biopsysite_consolidated), guide = guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, ncol = 2, keywidth = 0.5, keyheight = 0.5)) +
+  themeAnno_Job
+
+
+## Log2FC. ----
+
+plots$logFC <- sigGenes %>% 
+  dplyr::mutate(SYMBOL = factor(SYMBOL, levels = levels(heatData$Var1))) %>%
+  
+  ggplot2::ggplot(., aes(x = log2FoldChange, xend = 0, y = SYMBOL, yend = SYMBOL, fill = log2FoldChange)) +
+  ggplot2::scale_x_continuous(limits = c(-2.5, 2.5), expand = c(0,0)) +
+  
+  # Log2FC + Log2SE
+  ggplot2::geom_errorbar(aes(xmin = log2FoldChange + lfcSE, xmax = log2FoldChange - lfcSE), width = .75) +
+  ggplot2::geom_point(shape = 21) +
+  ggplot2::scale_fill_gradient2(limits = c(-2.5, 2.5), low = '#00FF00', mid = 'white', midpoint = 0, high = '#FF0000', guide = ggplot2::guide_colorbar(title = NULL, title.position = 'top', direction = 'horizontal', title.hjust = 0.5, barwidth = 4, barheight = .75)) +
+  
+  # Guidelines.
+  ggplot2::geom_vline(xintercept = 0, lwd = .2, color = 'black', lty = 'dashed') +
+  ggplot2::geom_vline(xintercept = .5, lwd = .2, color = 'grey25', lty = 'dotted') +
+  ggplot2::geom_vline(xintercept = -.5, lwd = .2, color = 'grey25', lty = 'dotted') +
+  
+  # Themes.
+  ggplot2::labs(x = 'Log<sub>2</sub>FC', y = NULL) +
+  theme_Job +
+  ggplot2::theme(
+    axis.text.y = ggplot2::element_blank(),
+    axis.ticks.y = ggplot2::element_blank(),
+    
+    panel.grid.major.y = ggplot2::element_blank()
+  )
+
+
+## Heatmap. ----
+
+plots$heatmap <- heatData %>% 
+  dplyr::mutate(
+    value = ifelse(value > 5, 5, value),
+    value = ifelse(value < -5, -5, value)
   ) %>% 
-  dplyr::left_join(DR71.MetaData$sampleInfo) %>% 
-  dplyr::mutate(biopsyId = gsub('.*T', 'T', sample)) %>% 
-  dplyr::group_by(hmfPatientId) %>% 
-  dplyr::add_tally() %>% 
-  dplyr::ungroup()
+  ggplot2::ggplot(., ggplot2::aes(x = Var2, y = Var1, fill = value))+
+  ggplot2::geom_tile(color = 'grey80') +
+  ggplot2::labs(x = 'Samples', y = 'Diff. exprs. genes (<i>n</i> = 76)') +
+  ggplot2::scale_y_discrete(expand=c(0, 0)) +
+  ggplot2::scale_fill_gradient2(limits = c(-5, 5), breaks = c(-5, -2.5, 0, 2.5, 5), labels = c('≤5', -2.5, 0, 2.5, '≥5'), low = '#00FF00', mid = 'white', midpoint = 0, high = '#FF0000', guide = ggplot2::guide_colorbar(title = NULL, title.position = 'top', direction = 'vertical', title.hjust = 0.5, barwidth = .75, barheight = 6)) +
+  theme_Job +
+  ggplot2::theme(
+    text = ggplot2::element_text(size = 7, family='Helvetica', face = 'bold'),
+    legend.position = 'right',
+    axis.text.x = ggplot2::element_blank(),
+    axis.ticks.x = ggplot2::element_blank()
+  )
 
-repeaters <- repeaters %>% dplyr::mutate(hmfPatientId2 = ifelse(n > 1, hmfPatientId, 'Single'), biopsyId =  ifelse(n > 1, biopsyId, NA))
+# Combine plots. ----
 
-# Column annotation.
-annotation.row <- data.frame('Direction' = factor(ifelse(colnames(t(heatData)) %in% AbiEnza.DE$SYMBOL, 'Up-regulated in bad responders', 'Down-regulated in bad responders')), row.names = colnames(t(heatData)))
-annotation.col <- data.frame(
-  'Responder.category' = DESeq2Counts.AbiEnza$Responder,
-  'Patient' = repeaters$hmfPatientId2,
-  'BiopsyId' = repeaters$biopsyId,
-  'HasPretreatment' = DESeq2Counts.AbiEnza$pretreatmentAbiEnzaApa,
-  'Treatment' = DESeq2Counts.AbiEnza$treatment.Generalized,
-  'Treatment.duration' = DESeq2Counts.AbiEnza$treatmentDurationInDays,
-  'Biopsy.site' = DESeq2Counts.AbiEnza$biopsySite.Generalized,
-  row.names = colnames(countData)
-)
+layout <- 'A##
+BCD
+E##
+F##
+G##'
 
-# Clean-up annotations.
-annotation.col <- annotation.col %>% dplyr::mutate(Treatment = gsub('/.*', '', Treatment))
-annotation.col <- annotation.col %>% dplyr::mutate(Treatment.duration = ifelse(is.na(Treatment.duration), -50, Treatment.duration))
 
-# Colors of the annotations.
-annotation.colors <- list(
-  'Direction' = c('Up-regulated in bad responders' = '#D03C3F', 'Down-regulated in bad responders' = '#5EA153'),
-  'Responder.category' = c('Bad Responder (≤100 days)' = '#E69F00', 'Good Responder (>100 days)' = '#019E73', 'Repeat' = 'grey'),
-  'Biopsy.site' = c('Liver' = '#FF3500', 'Bone' = '#FEFEFE', 'Other' = '#4CA947', 'Lung' = '#9E4CD7', 'Lymph node' = '#0A6C94', 'Soft tissue' = '#EDAEAE'),
-  'Treatment' = c('Abiraterone' = '#2a7fff', 'Enzalutamide' = '#ff7f2a'),
-  'Patient' = c("Single" = 'white', "HMF001410" = '#7FC97F', "HMF001925" = 'skyblue', "HMF000679" = '#BEAED4', "HMF000376" = '#FDC086', "HMF000222" = '#FFFF99', "HMF001378" = '#386CB0', "HMF000790" = '#F0027F', "HMF000429" = '#666666', "HMF001806"= '#BF5B17'),
-  'BiopsyId' = c('T' = '#0B4155', 'TII' = '#B7D03B', 'TIII' = '#19876D'),
-  'Treatment.duration' = RColorBrewer::brewer.pal(9, 'Greens'),
-  'HasPretreatment' = c('Yes' = 'pink', 'No' = 'white')
-)
-
-# Plot heatmap.
-pheatmap::pheatmap(
-  heatData,
-  fontsize_row = 6, treeheight_col = 15, treeheight_row = 15,
-  angle_col = 90,
-  show_colnames = F, show_rownames = T,
-  cluster_cols = T, cluster_rows = T, scale = 'row',
-  annotation_col = annotation.col, annotation_row = annotation.row, annotation_colors = annotation.colors,
-  clustering_distance_rows = 'euclidean', clustering_distance_cols = 'euclidean', clustering_method = 'ward.D2',
-  cellheight = 6, cellwidth = 5,
-  border_color = 'grey90',
-  color = colorRampPalette(c('green', 'white', 'red'))(101), 
-  cutree_rows = 2, cutree_cols = 2
-)
+plots$TreatmentDuration +
+  plots$heatmap + plots$logFC + plots$dendro.genes + 
+  plots$Responder + 
+  plots$Biopsy +
+  plots$dendro.samples + scale_y_reverse() +
+  patchwork::plot_layout(design = layout, guides = 'keep', heights = c(.2, 1, .05, .05, .075), widths = c(1, .2, .075))
