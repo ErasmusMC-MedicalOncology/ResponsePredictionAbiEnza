@@ -10,7 +10,7 @@ The commands and tools used in analysing the RNA-Seq data (starting from paired-
 
 All provided code in the R/ folder was performed on Ubuntu 18.04.5 LTS with the following *R* version:
 ```R
-R version 4.0.4 (2021-02-15) -- "Lost Library Book"
+R version 4.1.2 (2021-11-01) -- "Bird Hippie"
 Copyright (C) 2021 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 ```

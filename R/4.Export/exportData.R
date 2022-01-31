@@ -78,7 +78,6 @@ data.Report <- AbiEnza.Results$combinedReport %>%
 openxlsx::writeDataTable(wb, sheet = 'Mutation Report', x = data.Report)
 
 ## DESeq2 ----
-
 openxlsx::addWorksheet(wb, sheet = 'Results - DESeq2')
 data.DESeq2 <- AbiEnza.RNASeq$DESeq2Results %>% 
   dplyr::filter(isSig == 'Significant') %>% 
@@ -86,6 +85,17 @@ data.DESeq2 <- AbiEnza.RNASeq$DESeq2Results %>%
   dplyr::select(SYMBOL, ENSEMBL, dplyr::everything())
 
 openxlsx::writeDataTable(wb, sheet = 'Results - DESeq2', x = data.DESeq2)
+
+## GSEA ----
+openxlsx::addWorksheet(wb, sheet = 'Results - GSEA')
+data.GSEA <- AbiEnza.RNASeq$GSEA %>% 
+  dplyr::filter(padj <= 0.05) %>% 
+  dplyr::inner_join(read.delim('Misc/pathwayClean.csv', sep = '\t'), by = c('pathway' = 'pathwayOriginal')) %>% 
+  dplyr::arrange(NES) %>% 
+  dplyr::mutate(contrast = 'Bad vs. Good responders', leadingEdge = NULL) %>% 
+  dplyr::select(pathwayClean, pathway, dplyr::everything())
+
+openxlsx::writeDataTable(wb, sheet = 'Results - GSEA', x = data.GSEA)
 
 # Write to file ---------------------------------------------------------------------------------------------------
 

@@ -29,7 +29,7 @@ makeZ <- function (x){
 plots <- list()
 
 
-# Generate t-SNE of responders. ----
+# Generate heatmap of DE ----
 
 ## Retrieve VST-counts. ----
 countData <- SummarizedExperiment::assay(DESeq2::vst(AbiEnza.RNASeq$DESeq2, blind = T))
@@ -40,26 +40,18 @@ countData <- countData[rownames(countData) %in% sigGenes$SYMBOL,]
 
 ## Cluster rows and columns. ----
 
-orderGenes <- stats::hclust(stats::dist(makeZ(countData), method = 'canberra'), method = 'ward.D2')
-orderSamples <- stats::hclust(stats::dist(t(makeZ(countData)), method = 'canberra'), method = 'ward.D2')
+orderGenes <- sigGenes %>% dplyr::arrange(log2FoldChange) %>% dplyr::pull(SYMBOL)
+orderSamples <- stats::hclust(stats::dist(t(makeZ(countData)), method = 'euclidean'), method = 'ward.D2')
 
 ### Add ordering to counts. ----
 
 heatData <- reshape2::melt(makeZ(countData)) %>% 
   dplyr::mutate(
-    Var1 = factor(Var1, levels = orderGenes$labels[orderGenes$order]),
+    Var1 = factor(Var1, levels = orderGenes),
     Var2 = factor(Var2, levels = orderSamples$labels[orderSamples$order])
   )
 
 ### Generate dendograms. ----
-
-plots$dendro.genes <- ggdendro::ggdendrogram(orderGenes, rotate = T, labels = F) +
-  ggplot2::scale_y_discrete(expand=c(0, 0)) +
-  ggplot2::scale_x_discrete(expand=c(0.005, 0)) +
-  ggplot2::theme(
-    axis.text.x = ggplot2::element_blank(),
-    axis.text.y = ggplot2::element_blank(),
-  )
 
 plots$dendro.samples <- ggdendro::ggdendrogram(orderSamples, labels = F) +
   ggplot2::scale_y_discrete(expand=c(0, 0)) +
@@ -165,16 +157,42 @@ plots$heatmap <- heatData %>%
 
 # Combine plots. ----
 
-layout <- 'A##
-BCD
-E##
-F##
-G##'
+layout <- 'A#
+BC
+D#
+E#
+F#'
 
 
 plots$TreatmentDuration +
-  plots$heatmap + plots$logFC + plots$dendro.genes + 
+  plots$heatmap + plots$logFC + 
   plots$Responder + 
   plots$Biopsy +
   plots$dendro.samples + scale_y_reverse() +
-  patchwork::plot_layout(design = layout, guides = 'keep', heights = c(.2, 1, .05, .05, .075), widths = c(1, .2, .075))
+  patchwork::plot_layout(design = layout, guides = 'keep', heights = c(.2, 1, .05, .05, .075), widths = c(1, .2))
+
+
+# GSEA ----
+
+AbiEnza.RNASeq$GSEA %>% 
+  dplyr::filter(padj <= 0.05) %>% 
+  dplyr::arrange(NES) %>% 
+  dplyr::inner_join(read.delim('Misc/pathwayClean.csv', sep = '\t'), by = c('pathway' = 'pathwayOriginal')) %>% 
+  dplyr::distinct(pathwayClean, NES) %>% 
+  dplyr::mutate(
+    pathwayClean = gsub(' \\(Hall.*', ' <sup style="color:#4987BA">(H)</sup>', pathwayClean),
+    pathwayClean = gsub(' \\(Wiki.*', ' <sup style="color:#F17F64">(W)</sup>', pathwayClean)
+  ) %>% 
+  ggplot2::ggplot(aes(x = reorder(pathwayClean, NES), xend = reorder(pathwayClean, NES), yend = 0, y = NES, fill = NES)) +
+  ggplot2::geom_segment() +
+  ggplot2::geom_point(shape = 21) +
+  ggplot2::geom_hline(yintercept = 0, lty = '11') +
+  ggplot2::scale_y_continuous(limits = c(-3, 3)) +
+  ggplot2::scale_fill_gradient2(limits = c(-3, 3), breaks = c(-3, 0, 3), low = '#00FF00', mid = 'white', midpoint = 0, high = '#FF0000', guide = ggplot2::guide_colorbar(title = NULL, title.position = 'top', direction = 'horizontal', title.hjust = 0.5, barwidth = 6, barheight = .5)) +
+  ggplot2::scale_alpha_continuous(guide = 'none') +
+  ggplot2::labs(x = 'GSEA (Hallmark & WikiPathways; q ≤ 0.05)', y = 'Normalized Enrichment Score<br>Bad vs. good responders') + 
+  theme_Job + 
+  ggplot2::theme(
+    text = ggplot2::element_text(size = 9, family = 'Helvetica', face = 'bold'),
+    axis.text.y = ggtext::element_markdown()
+  ) + coord_flip()
