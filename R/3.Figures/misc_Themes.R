@@ -76,6 +76,9 @@ colorPalette <- c(
   'Bad Responder (≤100 days)' = '#8B0000', 
   'Ambiguous Responder (101-179 days)' = '#FFFFE0',
   'Good Responder (≥180 days)' = '#008080',
+  'Ambiguous Prediction' = '#FFFFE0',
+  'Predicted - Bad Responder' = '#8B0000',
+  'Predicted - Good Responder' = '#008080',
   
   # Treatments
   'Enzalutamide' = '#2c7fb8', 

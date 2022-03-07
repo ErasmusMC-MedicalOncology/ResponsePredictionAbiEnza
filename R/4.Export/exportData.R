@@ -7,9 +7,9 @@
 library(R2CPCT)
 
 # Import data.
-load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
-load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.Results.RData')
-load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Results.RData')
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')
 
 
 # Export results --------------------------------------------------------------------------------------------------

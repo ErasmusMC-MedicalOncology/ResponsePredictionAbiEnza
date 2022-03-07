@@ -12,10 +12,10 @@ library(DESeq2)
 # Import data -------------------------------------------------------------
 
 # Load metadata of the Abi/Enza-treated patients.
-load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
 
 # Retrieve WTS-data.
-load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')
 
 
 # Define gene-sets --------------------------------------------------------
@@ -78,4 +78,4 @@ AbiEnza.RNASeq$GSEA <- performGSEA(AbiEnza.RNASeq$DESeq2Results)
 
 # Save --------------------------------------------------------------------
 
-save(AbiEnza.RNASeq, file = '/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')
+save(AbiEnza.RNASeq, file = '/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')

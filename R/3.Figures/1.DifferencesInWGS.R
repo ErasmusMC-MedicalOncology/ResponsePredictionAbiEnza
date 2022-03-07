@@ -13,10 +13,10 @@ library(patchwork)
 source('R/3.Figures/misc_Themes.R')
 
 # Load metadata of the Abi/Enza-treated patients.
-load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
 
 # Retrieve WGS-data.
-load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.Results.RData')
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Results.RData')
 
 # List to hold plots.
 plots <- list()

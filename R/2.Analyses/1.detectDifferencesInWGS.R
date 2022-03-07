@@ -7,10 +7,10 @@
 library(R2CPCT)
 
 # Load metadata of the Abi/Enza-treated patients.
-load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
 
 # Retrieve WGS-data.
-load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.Results.RData')
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Results.RData')
 
 # Import required data.
 data('driverList', package = 'R2CPCT')
@@ -147,4 +147,4 @@ AbiEnza.Results$differencesWGS$mutExcl <- fisherData %>% dplyr::arrange(p.adj)
 
 # Save to object. ----
 
-save(AbiEnza.Results, file = '/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.Results.RData')
+save(AbiEnza.Results, file = '/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Results.RData')

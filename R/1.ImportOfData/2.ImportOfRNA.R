@@ -8,10 +8,10 @@ library(R2CPCT)
 library(DESeq2)
 
 # Load metadata of the Abi/Enza-treated patients.
-load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
 
 # Load RNA-Seq of the DR-071 cohort.
-load('/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/DR71.RNASeq.RData')
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/DR71.RNASeq.RData')
 
 # Retrieve batch-effect genes from the full DR-071 RNA-Seq cohort----
 batchGenes <- DR71.RNASeq$DESeq2Results.BetweenMajorBiopsySite %>% dplyr::filter(isSig) %>% dplyr::distinct(ENSEMBL)
@@ -66,4 +66,4 @@ AbiEnza.RNASeq$DESeq2Results <- R2CPCT::retrieveDESeq2Results(AbiEnza.RNASeq$DES
 AbiEnza.RNASeq$DESeq2Results <- AbiEnza.RNASeq$DESeq2Results %>% 
   dplyr::mutate(isSig = ifelse(padj <= 0.05 & baseMean >= 25 & lfcSE <= 1 & abs(log2FoldChange) >= 0.5, 'Significant', 'Not Significant'))
 
-save(AbiEnza.RNASeq, file = '/mnt/onco0002/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')
+save(AbiEnza.RNASeq, file = '/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')
