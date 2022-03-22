@@ -1,6 +1,6 @@
 # Author:    Job van Riet
 # Date:      07-03-22
-# Function:  Oerview of the predictions.
+# Function:  Overview of the predictions.
 
 # Libraries ----
 
