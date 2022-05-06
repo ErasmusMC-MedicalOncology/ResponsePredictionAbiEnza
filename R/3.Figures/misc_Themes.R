@@ -5,7 +5,7 @@ themeAnno_Job <- ggplot2::theme(
   axis.ticks = ggplot2::element_blank(),
   axis.title.y = ggtext::element_textbox_simple(size = 8, orientation = 'left-rotated', width = NULL, halign = .5),
   axis.text.x = ggplot2::element_blank(),
-  text = ggplot2::element_text(size = 8, family='Helvetica', face = 'bold'),
+  text = ggplot2::element_text(size = 8, family='Nimbus Sans', face = 'bold'),
   panel.background = ggplot2::element_rect(fill = NA),
   panel.grid.major = ggplot2::element_line(NULL),
   panel.grid.major.x = ggplot2::element_line(NULL),
@@ -19,7 +19,7 @@ themeAnno_Job <- ggplot2::theme(
 themeTrack_Job <- ggplot2::theme(
   legend.position = 'right',
   legend.direction = 'horizontal',
-  text = ggplot2::element_text(size = 7, family = 'Helvetica', face = 'bold'),
+  text = ggplot2::element_text(size = 7, family = 'Nimbus Sans', face = 'bold'),
   axis.title.y = ggtext::element_textbox_simple(size = 6, orientation = 'left-rotated', width = NULL, halign = .5),
   axis.text.x = ggplot2::element_blank(),
   axis.ticks.x = ggplot2::element_blank(),
@@ -39,7 +39,7 @@ themeTrack_Job <- ggplot2::theme(
 theme_Job <- ggplot2::theme(
   legend.position = 'bottom',
   legend.direction = 'horizontal',
-  text = ggplot2::element_text(size=9, family='Helvetica', face = 'bold'),
+  text = ggplot2::element_text(size=9, family='Nimbus Sans', face = 'bold'),
   axis.text.x = ggtext::element_markdown(),
   axis.title.x = ggtext::element_textbox_simple(width = NULL, halign = .5),
   axis.title.y = ggtext::element_textbox_simple(size = 8, orientation = 'left-rotated', width = NULL, halign = .5),
