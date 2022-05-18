@@ -6,7 +6,7 @@
 
 library(R2CPCT)
 library(ggplot2)
-library(extrafont)
+library(showtext)
 library(patchwork)
 
 # Load themes.
@@ -24,10 +24,7 @@ dataMeta <- AbiEnza.Metadata %>% dplyr::inner_join(dataPred, by = c('hmfSampleId
 
 dataMeta <- dataMeta %>% dplyr::mutate(
   priorAbiEnza = ifelse(Prior_Abiraterone == 'Yes' | Prior_Enzalutamide == 'Yes', 'Yes', NA),
-  priorChemo = ifelse(Prior_Docetaxel == 'Yes' | Prior_Cabazitaxel == 'Yes' | Prior_Otherchemotherapy == 'Yes', 'Yes', NA),
-  predicted_label = 'Ambiguous Prediction',
-  predicted_label = ifelse(probability_GoodResponder >= .6, 'Predicted - Good Responder', predicted_label),
-  predicted_label = ifelse(probability_GoodResponder <= .4, 'Predicted - Bad Responder', predicted_label)
+  priorChemo = ifelse(Prior_Docetaxel == 'Yes' | Prior_Cabazitaxel == 'Yes' | Prior_Otherchemotherapy == 'Yes', 'Yes', NA)
 )
 
 
@@ -36,7 +33,7 @@ dataMeta <- dataMeta %>% dplyr::mutate(
 tracks.landscape <- list()
 
 # Order samples on predictive value (Bad response)
-orderSamples <- dataMeta %>% dplyr::arrange(probability_GoodResponder) %>% dplyr::pull(sampleId)
+orderSamples <- dataMeta %>% dplyr::arrange(p_genomicsWithClinVars_GoodResponder) %>% dplyr::pull(sampleId)
 
 ## Track - Responder group ----
 
@@ -50,10 +47,10 @@ tracks.landscape$Responder <- dataMeta %>%
 
 tracks.landscape$Responder.Predicted <- dataMeta %>%
   dplyr::mutate(sampleId = factor(sampleId, levels = orderSamples)) %>%
-  ggplot2::ggplot(., ggplot2::aes(x = sampleId, y = 'Predicted class', fill = predicted_label)) +
+  ggplot2::ggplot(., ggplot2::aes(x = sampleId, y = 'Predicted class', fill = pred_label_genomicsWithClinVars)) +
   ggplot2::geom_tile(width = .8, colour = 'grey25', lwd = .25, na.rm = T) +
   ggplot2::labs(y = NULL, x = NULL) +
-  ggplot2::scale_fill_manual(values = colorPalette, breaks = unique(dataMeta$predicted_label), guide = guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, ncol = 1, keywidth = 0.5, keyheight = 0.5)) +
+  ggplot2::scale_fill_manual(values = colorPalette, breaks = unique(dataMeta$pred_label_genomicsWithClinVars), guide = guide_legend(title = NULL, title.position = 'top', title.hjust = 0.5, ncol = 1, keywidth = 0.5, keyheight = 0.5)) +
   themeAnno_Job
 
 
@@ -78,7 +75,7 @@ tracks.landscape$priorChemo <- dataMeta %>%
 
 tracks.landscape$Prediction <- dataMeta %>%
   dplyr::mutate(sampleId = factor(sampleId, levels = orderSamples)) %>%
-  ggplot2::ggplot(., ggplot2::aes(x = sampleId, y = probability_GoodResponder - .5, fill = probability_GoodResponder - .5)) +
+  ggplot2::ggplot(., ggplot2::aes(x = sampleId, y = p_genomicsWithClinVars_GoodResponder - .5, fill = p_genomicsWithClinVars_GoodResponder - .5)) +
   ggplot2::geom_bar(stat = 'identity', lwd = .1, color = 'black', width = .8) +
   ggplot2::scale_y_continuous(limits = c(-.5, .5), expand = c(0,0), labels = c('100% - Bad responder', '75% - Bad responder', 'No predictive distinction', '75% - Good responder', '100% - Good responder')) +
   ggplot2::scale_fill_gradient2('Prediction', low = "#8B0000", mid = 'white', high = "#008080", midpoint = 0, limits = c(-.5, .5), labels = c('100% - Bad responder', '75% - Bad responder', 'No predictive distinction', '75% - Good responder', '100% - Good responder'), guide = ggplot2::guide_colorbar(direction = 'vertical', title.position = 'top', title.hjust = 0.5, barwidth = 1, barheight = 5)) +
@@ -236,5 +233,5 @@ tracks.landscape$Prediction +
   tracks.landscape$HRD +
   tracks.landscape$Chromothripsis +
   tracks.landscape$biopsySite +
-  patchwork::plot_layout(guides = 'collect', ncol = 1, heights = c(1, .2, .2, 1, rep(1, 4), rep(.2, 6))) +
+  patchwork::plot_layout(guides = 'collect', ncol = 1, heights = c(1.2, .2, .2, 1, rep(1, 4), rep(.2, 6))) +
   patchwork::plot_annotation(tag_levels = 'a')
