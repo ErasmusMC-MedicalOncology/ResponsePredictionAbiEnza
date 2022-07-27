@@ -1,5 +1,5 @@
 # Author:    Job van Riet
-# Date:      06-01-22
+# Date:      27-07-22
 # Function:  Import and processing of the Abi/Enza-treated RNA-Seq samples (DR-071).
 
 # Libraries and data. ----
@@ -22,6 +22,9 @@ batchGenes <- DR71.RNASeq$DESeq2Results.BetweenMajorBiopsySite %>% dplyr::filter
 # Clean-up the responder category for use in DESeq2.
 AbiEnza.Metadata <- AbiEnza.Metadata %>% dplyr::mutate(responderCategory.DESeq2 = gsub(' .*', '', Responder))
 
+# List of training samples.
+trainingSamples <- readr::read_delim('Misc/samplesIncludedInTrainingSet.txt', delim = '\t') %>% dplyr::pull(includedTraining)
+
 
 # Retrieve read-counts of inclusion samples. ----
 
@@ -43,7 +46,7 @@ countData <- DESeq2::counts(DR71.RNASeq$DESeq2.withoutSequencingBatch, normalize
 countData <- countData[rownames(countData) %in% geneInfo$ENSEMBL,]
 
 # Subset inclusion samples.
-countData.AbiEnza <- countData[,colnames(countData) %in% AbiEnza.Metadata$hmfSampleId]
+countData.AbiEnza <- countData[,colnames(countData) %in% trainingSamples]
 
 
 # Generate DESeq2 Dataset. ----
@@ -57,7 +60,7 @@ SummarizedExperiment::rowData(DESeq2Counts.AbiEnza) <- tibble::as_tibble(Summari
 
 AbiEnza.RNASeq <- list()
 
-AbiEnza.RNASeq$DESeq2 <- DESeq2::DESeq(DESeq2Counts.AbiEnza, test = 'Wald', parallel = F, BPPARAM = BiocParallel::MulticoreParam(workers = 8))
+AbiEnza.RNASeq$DESeq2 <- DESeq2::DESeq(DESeq2Counts.AbiEnza, test = 'Wald', parallel = F, BPPARAM = BiocParallel::MulticoreParam(workers = 20))
 
 # Retrieve the results. (Bad vs. Good responders)
 AbiEnza.RNASeq$DESeq2Results <- R2CPCT::retrieveDESeq2Results(AbiEnza.RNASeq$DESeq2, contrast = c('responderCategory.DESeq2', 'Bad', 'Good'))
