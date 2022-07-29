@@ -1,5 +1,5 @@
 # Author:    Job van Riet
-# Date:      19-01-22
+# Date:      29-07-22
 # Function:  Export results to Excel.
 
 # Libraries ----
@@ -10,6 +10,11 @@ library(R2CPCT)
 load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
 load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Results.RData')
 load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')
+
+# Load RNA-Seq of the DR-071 cohort.
+load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/DR71.RNASeq.RData')
+# Retrieve batch-effect genes from the full DR-071 RNA-Seq cohort----
+batchGenes <- DR71.RNASeq$DESeq2Results.BetweenMajorBiopsySite %>% dplyr::filter(isSig)
 
 
 # Export results --------------------------------------------------------------------------------------------------
@@ -77,6 +82,19 @@ data.Report <- AbiEnza.Results$combinedReport %>%
 
 openxlsx::writeDataTable(wb, sheet = 'Mutation Report', x = data.Report)
 
+## Mut. Excl. ----
+
+openxlsx::addWorksheet(wb, 'Mutual Excl Genes')
+data.ExclMut <- AbiEnza.Results$differencesWGS$mutExcl %>% 
+    dplyr::select(SYMBOL, dplyr::everything())
+
+openxlsx::writeDataTable(wb, sheet = 'Mutual Excl Genes', x = data.ExclMut)
+
+## Batch genes ----
+openxlsx::addWorksheet(wb, sheet = 'Batch genes')
+openxlsx::writeDataTable(wb, sheet = 'Batch genes', x = batchGenes)
+
+
 ## DESeq2 ----
 openxlsx::addWorksheet(wb, sheet = 'Results - DESeq2')
 data.DESeq2 <- AbiEnza.RNASeq$DESeq2Results %>% 
@@ -90,7 +108,7 @@ openxlsx::writeDataTable(wb, sheet = 'Results - DESeq2', x = data.DESeq2)
 openxlsx::addWorksheet(wb, sheet = 'Results - GSEA')
 data.GSEA <- AbiEnza.RNASeq$GSEA %>% 
   dplyr::filter(padj <= 0.05) %>% 
-  dplyr::inner_join(read.delim('Misc/pathwayClean.csv', sep = '\t'), by = c('pathway' = 'pathwayOriginal')) %>% 
+  dplyr::inner_join(read.delim('~/test/pathwayClean.csv', sep = '\t'), by = c('pathway' = 'pathwayOriginal')) %>% 
   dplyr::arrange(NES) %>% 
   dplyr::mutate(contrast = 'Bad vs. Good responders', leadingEdge = NULL) %>% 
   dplyr::select(pathwayClean, pathway, dplyr::everything())

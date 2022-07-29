@@ -3,7 +3,7 @@
 themeAnno_Job <- ggplot2::theme(
   legend.position = 'right',
   axis.ticks = ggplot2::element_blank(),
-  axis.title.y = ggtext::element_textbox_simple(size = 8, orientation = 'left-rotated', width = NULL, halign = .5),
+  axis.title.y = ggtext::element_textbox_simple(size = 8, family='Roboto', face = 'bold', orientation = 'left-rotated', width = NULL, halign = .5),
   axis.text.x = ggplot2::element_blank(),
   text = ggplot2::element_text(size = 8, family='Roboto', face = 'bold'),
   panel.background = ggplot2::element_rect(fill = NA),
@@ -11,8 +11,8 @@ themeAnno_Job <- ggplot2::theme(
   panel.grid.major.x = ggplot2::element_line(NULL),
   panel.grid.major.y = ggplot2::element_line(NULL),
   plot.margin = ggplot2::unit(c(0, 0, 0, 0), "cm"),
-  legend.text = ggtext::element_markdown(),
-  legend.title = ggtext::element_markdown(),
+  legend.text = ggtext::element_markdown(family='Roboto', face = 'bold'),
+  legend.title = ggtext::element_markdown(family='Roboto', face = 'bold'),
   legend.key = ggplot2::element_blank()
 )
 
@@ -20,7 +20,7 @@ themeTrack_Job <- ggplot2::theme(
   legend.position = 'right',
   legend.direction = 'horizontal',
   text = ggplot2::element_text(size = 7, family = 'Roboto', face = 'bold'),
-  axis.title.y = ggtext::element_textbox_simple(size = 6, orientation = 'left-rotated', width = NULL, halign = .5),
+  axis.title.y = ggtext::element_textbox_simple(size = 6, family='Roboto', face = 'bold', orientation = 'left-rotated', width = NULL, halign = .5),
   axis.text.x = ggplot2::element_blank(),
   axis.ticks.x = ggplot2::element_blank(),
   panel.grid.major.x = ggplot2::element_blank(),
@@ -31,8 +31,8 @@ themeTrack_Job <- ggplot2::theme(
   panel.border = ggplot2::element_rect(fill = NA, colour = NA),
   strip.background = ggplot2::element_rect(colour = 'grey20', fill = 'white'),
   plot.margin = ggplot2::unit(c(0, 0, 0, 0), "cm"),
-  legend.text = ggtext::element_markdown(),
-  legend.title = ggtext::element_markdown(),
+  legend.text = ggtext::element_markdown(family='Roboto', face = 'bold'),
+  legend.title = ggtext::element_markdown(family='Roboto', face = 'bold'),
   legend.key = ggplot2::element_blank()
 )
 
