@@ -1,42 +1,58 @@
-# Generate survival plots with p-values and median OS.
-plotSurvival <- function(fit, ylim, data, palette = 'jco', hr = NULL){
+# Generate KM-plots with p-values and median of time of strata.
+plotKM.Treatment <- function(fit, ylim, palette = 'jco', hr = NULL){
+    
+    # Clean-up strata.
+    names(fit$strata) <-  base::gsub('.*=', '', names(fit$strata))
     
     # Generate survival plot.
     x <- survminer::ggsurvplot(
         fit = fit,
         pval = F,
         size = .825,
-        break.time.by = 10,
-        break.y.by = .2,
+        break.time.by = 500,
+        break.y.by = .2, 
         palette = palette,
         risk.table = T,
-        tables.height = .3,
-        xlab = 'Time (in months)',
+        tables.height = .25,
+        xlab = 'Treatment duration (in days)',
         axes.offset = F,
         ylim = c(0, 1.05),
         xlim = c(0, ylim), strata.labels = 'c',
         risk.table.col = 'strata', censor.shape = '+',
         fontsize = 3, 
-        conf.int = T,
+        conf.int = F,
         surv.median.line = 'hv',
         risk.table.title = 'No. at risk',
         ggtheme = ggplot2::theme(
-            legend.position = 'bottom',
-            legend.direction = 'horizontal',
-            text = ggplot2::element_text(size=9, family='Arial', face = 'bold'),
-            axis.title.x = ggtext::element_textbox_simple(width = NULL, halign = .5),
-            axis.title.y = ggtext::element_textbox_simple(size = 8, orientation = 'left-rotated', width = NULL, halign = .5),
+            legend.position = 'none',
+            axis.title.x = ggtext::element_textbox_simple(width = NULL, halign = .5, family='Roboto', face = 'bold'),
+            axis.title.y = ggtext::element_textbox_simple(size = 8, orientation = 'left-rotated',family='Roboto', face = 'bold', width = NULL, halign = .5),
             panel.grid.major.x = ggplot2::element_line(colour = 'grey90', linetype = 'dotted'),
             panel.grid.major.y = ggplot2::element_line(colour = '#E5E5E5', linetype = 'dotted'),
             panel.grid.minor.y = ggplot2::element_blank(),
             panel.background = ggplot2::element_rect(fill = NA, colour = 'black'),
-            legend.text = ggtext::element_markdown()
-        )
+            text = ggplot2::element_text(size = 8, family='Roboto', face = 'bold'),
+            legend.text = ggtext::element_markdown(family='Roboto', face = 'bold')
+        ),
+        font.family = 'Roboto'
     )
     
     # Add the log-rank p-value.
-    p.logrank <- survminer::surv_pvalue(fit = fit, method = 'log-rank', data = data, test.for.trend = F)
-    x$plot <- x$plot + ggplot2::annotate('text', x = 20, y = 1, size = 2.5, label = paste0('log-rank: ', p.logrank$pval.txt), fontface = 'bold')
+    p.logrank <- survminer::surv_pvalue(fit = fit, method = 'log-rank', test.for.trend = F)
+    x$plot <- x$plot + ggplot2::annotate('text', x = 1500, y = .95, size = 2.5, label = paste0('log-rank: ', p.logrank$pval.txt), family='Roboto')
+    
+    # Add the good vs. bad responder q-value.
+    p.goodvsbad <- survminer::pairwise_survdiff(fit$call$formula, data = fit$call$data, p.adjust.method = 'none')
+    if(all(dim(p.goodvsbad$p.value) == c(2,2))){
+        p.goodvsbad <- p.goodvsbad$p.value[2,2]
+        p.goodvsbad <- round(p.goodvsbad, 3)
+        x$plot <- x$plot + ggplot2::annotate('text', x = 1500, y = .8, size = 2.5, label = paste0('Bad vs. Good Responders: log-rank p = ', p.goodvsbad), family='Roboto')
+    }
+    
+    # Add the median + 95% CI treatment duration.
+    medians <- survminer::surv_median(fit = fit) %>% dplyr::mutate(label = sprintf('%s: %s (%s-%s)', strata, median, lower, upper))
+    x$plot <- x$plot + ggplot2::annotate('text', x = 1500, y = .7, size = 2.5, label = paste(medians$label, collapse = '\n'), family='Roboto')
+    
     
     # Add HR (if two groups)
     if(!is.null(hr)){
@@ -46,40 +62,24 @@ plotSurvival <- function(fit, ylim, data, palette = 'jco', hr = NULL){
         HR.CI <- sprintf('HR (95%% CI): %s (%s - %s)', HR.CI[[1]], HR.CI[[3]], HR.CI[[4]])
         x$plot <- x$plot + ggplot2::annotate('text', x = 20, y = .95, label = HR.CI, size = 2.5, fontface = 'bold')
         
-        # Plot AIC
-        x$plot <- x$plot + ggplot2::annotate('text', x = 20, y = .9, label = sprintf('AIC: %s', round(AIC(hr), 2)), size = 2.5, fontface = 'bold')
-        
     }
     
     # Remove legends.
     x$plot <- x$plot + theme_Job + ggplot2::theme(legend.position = 'none')
-    x$table <- x$table + theme_Job + ggplot2::theme(legend.position = 'none', text = ggplot2::element_text(size=9, family='Arial', face = 'bold'))
+    x$table <- x$table + theme_Job + ggplot2::theme(legend.position = 'none') + ggplot2::ylab(NULL)
     
     # Add perc. scaling.
-    x$plot <- x$plot + ggplot2::scale_y_continuous(labels = scales::percent_format())
+    x$plot <- x$plot + ggplot2::scale_y_continuous(labels = scales::percent_format(), limits = c(0,1), expand = c(0,0.01))
+    x$plot <- x$plot + ggplot2::ylab('Cum. Ongoing Treatment') + ggplot2::xlab(NULL)
     
     return(x)
 }
 
-plotHR <- function(data, withQ = F){
-    x <- data %>% 
-        gtsummary::tbl_regression(
-            exponentiate = T, 
-            add_estimate_to_reference_rows = T,
-        ) %>%
-        gtsummary::add_n() %>% 
-        gtsummary::add_global_p() %>% 
-        gtsummary::add_nevent() %>% 
-        gtsummary::bold_p() %>% 
-        gtsummary::bold_labels() %>% 
-        gtsummary::italicize_levels() %>% 
-        gtsummary::sort_p() %>% 
-        bstfun::add_inline_forest_plot(header = '', spec_pointrange.args = list(lim = c(-3, 3), width = 550, cex = 1, col = 'black', pch = 1))
+plotKM.OS <- function(fit, ylim, palette = 'jco', hr = NULL){
+    x <- plotKM.Treatment(fit, ylim, palette, hr)
+    x$plot <- x$plot + ggplot2::ylab('Cum. Survival')
+    x$table <- x$table + ggplot2::xlab('Overall survival')
     
-    if(withQ){
-        x <- x %>% gtsummary::add_q()
-    }
-    
-    x %>% bstfun::as_ggplot()
+    return(x)
     
 }

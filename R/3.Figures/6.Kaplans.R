@@ -17,7 +17,7 @@ source('R/3.Figures/misc_Functions.R')
 
 
 # Load metadata of the Abi/Enza-treated patients.
-load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
+load('~/Downloads/AbiEnza.Metadata.RData')
 
 
 # Read prediction metrics.
@@ -34,6 +34,8 @@ dataPred <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xls', sheet 
 
 # Survival Analysis (Cox regression) ----
 
+plotFits <- list()
+
 ## ClinicoGenomics (Treatment duration) ----
 plotFits$clinicogenomics.Two <- plotKM.Treatment(
     survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_Clinicogenomics, data = dataPred),
@@ -49,25 +51,6 @@ svglite::svglite(file = 'Fig6_Kaplan.svg', width = 5, height = 8.5)
 plotFits$clinicogenomics.Two$plot + plotFits$clinicogenomics.Two$table +
     plotFits$clinicogenomics.Three$plot + plotFits$clinicogenomics.Three$table + 
     patchwork::plot_layout(ncol = 1, heights = c(1, .15, 1, .25))
-dev.off()
-
-
-## WGS/WTS-only models. ----
-
-plotFits$WGS.Internal <- plotKM.Treatment(
-    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_Genomics, data = dataPred),
-    ylim = 2550, palette = c('orange', '#8B0000', '#008080')
-)
-
-plotFits$WTS.Internal <- plotKM.Treatment(
-    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_Transcriptomics, data = dataPred %>% dplyr::filter(!is.na(dataPred$Transcriptomics_probability_Bad))),
-    ylim = 2550, palette = c('orange', '#8B0000', '#008080')
-)
-
-svglite::svglite(file = 'SupplFig5.svg', width = 9.5, height = 4.5)
-plotFits$WGS.Internal$plot + plotFits$WTS.Internal$plot +
-    plotFits$WGS.Internal$table + plotFits$WTS.Internal$table + 
-    patchwork::plot_layout(ncol = 2, heights = c(1, .25))
 dev.off()
 
 
@@ -97,11 +80,31 @@ EF
 CD
 GH'
 
-svglite::svglite(file = 'SupplFig6.svg', width = 10, height = 8.5)
+svglite::svglite(file = 'SupplFig5.svg', width = 10, height = 8.5)
 plotFits$clinicogenomics.Group1$plot + plotFits$clinicogenomics.Group2$plot + plotFits$clinicogenomics.Group3$plot + plotFits$clinicogenomics.Group4$plot +
     plotFits$clinicogenomics.Group1$table + plotFits$clinicogenomics.Group2$table + plotFits$clinicogenomics.Group3$table + plotFits$clinicogenomics.Group4$table +
     patchwork::plot_layout(design = layout, heights = c(1, .2, 1, .2))
 dev.off()
+
+
+## WGS/WTS-only models. ----
+
+plotFits$WGS.Internal <- plotKM.Treatment(
+    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_Genomics, data = dataPred),
+    ylim = 2550, palette = c('orange', '#8B0000', '#008080')
+)
+
+plotFits$WTS.Internal <- plotKM.Treatment(
+    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_Transcriptomics, data = dataPred %>% dplyr::filter(!is.na(dataPred$Transcriptomics_probability_Bad))),
+    ylim = 2550, palette = c('orange', '#8B0000', '#008080')
+)
+
+svglite::svglite(file = 'SupplFig6.svg', width = 9.5, height = 4.5)
+plotFits$WGS.Internal$plot + plotFits$WTS.Internal$plot +
+    plotFits$WGS.Internal$table + plotFits$WTS.Internal$table + 
+    patchwork::plot_layout(ncol = 2, heights = c(1, .25))
+dev.off()
+
 
 ## ClinicoGenomics (OS) ----
 
