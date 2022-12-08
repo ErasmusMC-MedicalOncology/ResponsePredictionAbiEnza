@@ -1,5 +1,5 @@
 # Author:    Job van Riet
-# Date:      06-05-22
+# Date:      08-12-22
 # Function:  Visualize genomic differences.
 
 # Libraries ----
@@ -162,3 +162,22 @@ pheatmap::pheatmap(
     border_color = 'grey90', drop_levels = T, 
     color = colorRampPalette(c('darkgreen', 'green', 'white', 'red', 'darkred'))(101)
 )
+
+# Visualization - Mutational loads of selected genes. ----
+AbiEnza.Results$differencesWGS$mutExcl %>% 
+    dplyr::filter(SYMBOL %in% c('AR', 'TP53', 'PTEN', 'RB1', 'CTNNB1')) %>% 
+    dplyr::select(SYMBOL, Good.withMut, Good.withoutMut, Bad.withMut, Bad.withoutMut, p.adj) %>% 
+    reshape2::melt(id.vars = c('SYMBOL', 'p.adj')) %>% 
+    dplyr::mutate(
+        group = gsub('\\..*', ' Responders', variable),
+        type = gsub('.*\\.', ' Responders', variable)
+        ) %>% 
+    ggplot2::ggplot(., ggplot2::aes(x = group, y = value, fill = type)) +
+    ggplot2::geom_bar(stat = 'identity', color = 'black', width = .7) +
+    ggplot2::geom_text(data = . %>% dplyr::distinct(SYMBOL, type, group, p.adj), aes(x = group, y = 42, label = round(p.adj, 3)), size = 3, inherit.aes = F) +
+    ggplot2::scale_y_continuous(expand = c(0,0), limits = c(0, 45)) +
+    ggplot2::labs(x = 'Genes', y = 'Frequency') +
+    ggplot2::scale_fill_manual(values = c("darkred", "grey")) +
+    ggplot2::facet_grid(SYMBOL ~ .) +
+    theme_Job +
+    coord_flip()
