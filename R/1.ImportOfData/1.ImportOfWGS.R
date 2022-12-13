@@ -58,15 +58,15 @@ AbiEnza.Results <- list()
 AbiEnza.Results$mutationalBurden <- R2CPCT::determineMutationalBurden(AbiEnza.CohortWGS, minTAF.Muts = 0, minTAF.SV = 0)
 
 # Determine exonic TMB.
-data(GENCODE.v38, package = 'R2CPCT')
-GENCODE.v38.proteinCoding <- GENCODE.v38[GENCODE.v38$gene_type == 'protein_coding']
-GENCODE.v38.proteinCoding <- GenomicRanges::reduce(GENCODE.v38.proteinCoding)
+data(GENCODE.v38.Exons, package = 'R2CPCT')
+GenomicRanges::strand(GENCODE.v38.Exons) <- '*'
+GENCODE.v38.Exons <- GenomicRanges::reduce(GENCODE.v38.Exons)
 
-exonMuts <- IRanges::subsetByOverlaps(AbiEnza.CohortWGS$somaticVariants, GENCODE.v38.proteinCoding) %>% 
+exonMuts <- IRanges::subsetByOverlaps(AbiEnza.CohortWGS$somaticVariants, GENCODE.v38.Exons) %>% 
     tibble::as_tibble(S4Vectors::mcols(.)) %>% 
     dplyr::group_by(sample) %>% 
     dplyr::summarise(
-        Exome.TMB = dplyr::n() / (sum(GenomicRanges::width(GENCODE.v38.proteinCoding))/1e+06)
+        Exome.TMB = dplyr::n() / (sum(GenomicRanges::width(GENCODE.v38.Exons))/1e+06)
     ) %>% 
     dplyr::ungroup()
 
