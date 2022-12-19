@@ -1,6 +1,6 @@
 # Author:                       Job van Riet
 # Date of modification:         31-01-22
-# Function:                     Perform GSEA between Good vs. Bad responders.
+# Function:                     Perform GSEA between Good vs. Poor responders.
 
 
 # Load packages -----------------------------------------------------------

@@ -74,8 +74,8 @@ tracks.landscape$Prediction <- dataPred %>%
   dplyr::mutate(sampleId = factor(sampleId, levels = orderSamples)) %>%
   ggplot2::ggplot(., ggplot2::aes(x = sampleId, y = Clinicogenomics_probability_Good - .5, fill = Clinicogenomics_probability_Good - .5)) +
   ggplot2::geom_bar(stat = 'identity', lwd = .1, color = 'black', width = .8) +
-  ggplot2::scale_y_continuous(limits = c(-.5, .5), expand = c(0,0), labels = c('100% - Bad responder', '75% - Bad responder', 'No predictive distinction', '75% - Good responder', '100% - Good responder')) +
-  ggplot2::scale_fill_gradient2('Prediction', low = "#8B0000", mid = 'white', high = "#008080", midpoint = 0, limits = c(-.5, .5), labels = c('100% - Bad responder', '75% - Bad responder', 'No predictive distinction', '75% - Good responder', '100% - Good responder'), guide = ggplot2::guide_colorbar(direction = 'vertical', title.position = 'top', title.hjust = 0.5, barwidth = 1, barheight = 5)) +
+  ggplot2::scale_y_continuous(limits = c(-.5, .5), expand = c(0,0), labels = c('100% - Poor responder', '75% - Poor responder', 'No predictive distinction', '75% - Good responder', '100% - Good responder')) +
+  ggplot2::scale_fill_gradient2('Prediction', low = "#8B0000", mid = 'white', high = "#008080", midpoint = 0, limits = c(-.5, .5), labels = c('100% - Poor responder', '75% - Poor responder', 'No predictive distinction', '75% - Good responder', '100% - Good responder'), guide = ggplot2::guide_colorbar(direction = 'vertical', title.position = 'top', title.hjust = 0.5, barwidth = 1, barheight = 5)) +
   ggplot2::labs(y = 'Predictive probability', x = NULL) +
   themeTrack_Job + theme(axis.text.x = ggplot2::element_blank())
 

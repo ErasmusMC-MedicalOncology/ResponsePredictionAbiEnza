@@ -26,7 +26,7 @@ tracks.landscape <- list()
 # Sort on Abi/Enza treatment duration.
 orderSamples <- AbiEnza.Metadata %>%
   dplyr::inner_join(AbiEnza.Results$mutationalBurden, by = c('sampleId' = 'sample')) %>% 
-  dplyr::mutate(Responder = factor(Responder, levels = c('Good Responder (≥180 days)','Ambiguous Responder (101-179 days)', 'Bad Responder (≤100 days)'))) %>% 
+  dplyr::mutate(Responder = factor(Responder, levels = c('Good Responder (≥180 days)','Ambiguous Responder (101-179 days)', 'Poor Responder (≤100 days)'))) %>% 
   dplyr::arrange(Responder, -treatmentduration_days) %>%
   dplyr::pull(sampleId)
 

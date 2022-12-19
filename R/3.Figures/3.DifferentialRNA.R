@@ -1,6 +1,6 @@
 # Author:    Job van Riet
 # Date:      27-07-22
-# Function:  Figure of the differential analysis between good vs. bad responders on Abi/Enza-treatment.
+# Function:  Figure of the differential analysis between good vs. poor responders on Abi/Enza-treatment.
 
 # Set seed for reproducibility of t-SNE
 set.seed(708813)

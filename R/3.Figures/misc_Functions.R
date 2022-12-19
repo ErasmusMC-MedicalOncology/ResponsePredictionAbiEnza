@@ -46,7 +46,7 @@ plotKM.Treatment <- function(fit, ylim, palette = 'jco', hr = NULL){
     if(all(dim(p.goodvsbad$p.value) == c(2,2))){
         p.goodvsbad <- p.goodvsbad$p.value[2,2]
         p.goodvsbad <- round(p.goodvsbad, 3)
-        x$plot <- x$plot + ggplot2::annotate('text', x = 1500, y = .8, size = 2.5, label = paste0('Bad vs. Good Responders: log-rank p = ', p.goodvsbad), family='Roboto')
+        x$plot <- x$plot + ggplot2::annotate('text', x = 1500, y = .8, size = 2.5, label = paste0('Poor vs. Good Responders: log-rank p = ', p.goodvsbad), family='Roboto')
     }
     
     # Add the median + 95% CI treatment duration.
