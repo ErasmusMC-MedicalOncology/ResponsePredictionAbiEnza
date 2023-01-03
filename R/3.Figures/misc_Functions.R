@@ -45,8 +45,8 @@ plotKM.Treatment <- function(fit, ylim, palette = 'jco', hr = NULL){
     p.goodvsbad <- survminer::pairwise_survdiff(fit$call$formula, data = fit$call$data, p.adjust.method = 'none')
     if(all(dim(p.goodvsbad$p.value) == c(2,2))){
         p.goodvsbad <- p.goodvsbad$p.value[2,2]
-        p.goodvsbad <- round(p.goodvsbad, 3)
-        x$plot <- x$plot + ggplot2::annotate('text', x = 1500, y = .8, size = 2.5, label = paste0('Poor vs. Good Responders: log-rank p = ', p.goodvsbad), family='Roboto')
+        p.goodvsbad <- round(p.goodvsbad, 5)
+        x$plot <- x$plot + ggplot2::annotate('text', x = 1500, y = .8, size = 2.5, label = paste0('Poor vs. Good Responders: log-rank q = ', p.goodvsbad), family='Roboto')
     }
     
     # Add the median + 95% CI treatment duration.

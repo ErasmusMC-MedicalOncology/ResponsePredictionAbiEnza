@@ -21,13 +21,14 @@ load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
 
 
 # Read prediction metrics.
-dataPred <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xls', sheet = 'Predictions', skip = 1, trim_ws = T) %>% 
+dataPred <- readxl::read_xlsx('../Misc/Suppl. Table 1 - OverviewOfData.xls', sheet = 'Predictions', skip = 1, trim_ws = T) %>% 
     dplyr::filter(subgroupCohort != 'Training') %>% 
     dplyr::inner_join(AbiEnza.Metadata, by = 'hmfSampleId') %>% 
     dplyr::mutate(
         Prediction_Transcriptomics = dplyr::if_else(Transcriptomics_probability_Bad >= .6, 'Predicted - Poor Responder', dplyr::if_else(Transcriptomics_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
         Prediction_Genomics = dplyr::if_else(WGS_probability_Bad >= .6, 'Predicted - Poor Responder', dplyr::if_else(WGS_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
-        Prediction_WES = dplyr::if_else(WES_probability_Bad >= .6, 'Predicted - Poor Responder', dplyr::if_else(WES_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
+        Prediction_WES = dplyr::if_else(WES_probability_Bad >= .5, 'Predicted - Poor Responder', 'Predicted - Good Responder'),
+        Prediction_WES_Ambi = dplyr::if_else(WES_probability_Bad >= .6, 'Predicted - Poor Responder', dplyr::if_else(WES_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
         Prediction_Clinicogenomics_Ambi = dplyr::if_else(Clinicogenomics_probability_Bad >= .6 | Clinicogenomics_probability_Good >= .6, Prediction_Clinicogenomics, 'Ambiguous Prediction'),
         treatmentStatus = dplyr::if_else(Treatment_Ongoing == 'Yes', 0, 1)
     )
@@ -48,10 +49,22 @@ plotFits$clinicogenomics.Three <- plotKM.Treatment(
     ylim = 2550, palette = c('orange', '#8B0000', '#008080')
 )
 
-svglite::svglite(file = 'Fig6_Kaplan.svg', width = 5, height = 8.5)
+plotFits$WES.Internal.Two <- plotKM.Treatment(
+    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_WES, data = dataPred),
+    ylim = 2550, palette = c('#8B0000', '#008080')
+)
+
+plotFits$WES.Internal.Three <- plotKM.Treatment(
+    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_WES_Ambi, data = dataPred),
+    ylim = 2550, palette = c('orange', '#8B0000', '#008080')
+)
+
+svglite::svglite(file = 'Fig6_Kaplan.svg', width = 5.5, height = 18)
 plotFits$clinicogenomics.Two$plot + plotFits$clinicogenomics.Two$table +
     plotFits$clinicogenomics.Three$plot + plotFits$clinicogenomics.Three$table + 
-    patchwork::plot_layout(ncol = 1, heights = c(1, .15, 1, .25))
+    plotFits$WES.Internal.Two$plot + plotFits$WES.Internal.Two$table +
+    plotFits$WES.Internal.Three$plot + plotFits$WES.Internal.Three$table +
+    patchwork::plot_layout(ncol = 1, heights = c(1, .15, 1, .25, 1, .15, 1, .25))
 dev.off()
 
 
@@ -95,19 +108,14 @@ plotFits$WGS.Internal <- plotKM.Treatment(
     ylim = 2550, palette = c('orange', '#8B0000', '#008080')
 )
 
-plotFits$WES.Internal <- plotKM.Treatment(
-    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_WES, data = dataPred),
-    ylim = 2550, palette = c('orange', '#8B0000', '#008080')
-)
-
 plotFits$WTS.Internal <- plotKM.Treatment(
     survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_Transcriptomics, data = dataPred %>% dplyr::filter(!is.na(dataPred$Transcriptomics_probability_Bad))),
     ylim = 2550, palette = c('orange', '#8B0000', '#008080')
 )
 
-svglite::svglite(file = 'SupplFig6.svg', width = 16.5, height = 5)
-plotFits$WGS.Internal$plot + plotFits$WES.Internal$plot + plotFits$WTS.Internal$plot +
-    plotFits$WGS.Internal$table + plotFits$WES.Internal$table + plotFits$WTS.Internal$table + 
+svglite::svglite(file = 'SupplFig6.svg', width = 10.5, height = 5)
+plotFits$WGS.Internal$plot + plotFits$WTS.Internal$plot +
+    plotFits$WGS.Internal$table + plotFits$WTS.Internal$table + 
     patchwork::plot_layout(ncol = 3, heights = c(1, .25))
 dev.off()
 
