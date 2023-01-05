@@ -118,3 +118,7 @@ openxlsx::writeDataTable(wb, sheet = 'Results - GSEA', x = data.GSEA)
 # Write to file ---------------------------------------------------------------------------------------------------
 
 openxlsx::saveWorkbook(wb, file = '~/test/AbiEnza.xls', overwrite = T)
+
+write.table(DESeq2::counts(DESeq2Counts.AbiEnza), file = '~/test/AbiEnzaCounts_AllSamples.txt', quote = F, sep = '\t',row.names = T)
+write.table(colData(DESeq2Counts.AbiEnza), file = '~/test/AbiEnzaMetaData.txt', quote = F, sep = '\t',row.names = T)
+write.table(AbiEnza.RNASeq$DESeq2Results %>% dplyr::filter(isSig == 'Significant'), file = '~/test/AbiEnzaDEGs.txt', quote = F, sep = '\t',row.names = F)
