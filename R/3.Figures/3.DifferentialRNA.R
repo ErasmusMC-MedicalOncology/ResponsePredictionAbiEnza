@@ -215,7 +215,7 @@ AbiEnza.RNASeq$GSEA %>%
     ggplot2::scale_y_continuous(limits = c(-3, 3)) +
     ggplot2::scale_fill_gradient2(limits = c(-3, 3), breaks = c(-3, 0, 3), low = '#005AB5', mid = 'white', midpoint = 0, high = '#DC3220', guide = ggplot2::guide_colorbar(title = NULL, title.position = 'top', direction = 'horizontal', title.hjust = 0.5, barwidth = 6, barheight = .5)) +
     ggplot2::scale_alpha_continuous(guide = 'none') +
-    ggplot2::labs(x = 'GSEA (Hallmark & WikiPathways; q ≤ 0.05)', y = 'Normalized Enrichment Score<br>Bad vs. good responders') + 
+    ggplot2::labs(x = 'GSEA (Hallmark & WikiPathways; q ≤ 0.05)', y = 'Normalized Enrichment Score<br>Poor vs. good responders') + 
     theme_Job + 
     ggplot2::theme(
         axis.text.y = ggtext::element_markdown(size = 5)
