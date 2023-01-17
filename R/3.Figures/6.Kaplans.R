@@ -21,15 +21,17 @@ load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
 
 
 # Read prediction metrics.
-dataPred <- readxl::read_xlsx('../Misc/Suppl. Table 1 - OverviewOfData.xls', sheet = 'Predictions', skip = 1, trim_ws = T) %>% 
+dataPred <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xls', sheet = 'Predictions', skip = 1, trim_ws = T) %>% 
     dplyr::filter(subgroupCohort != 'Training') %>% 
     dplyr::inner_join(AbiEnza.Metadata, by = 'hmfSampleId') %>% 
     dplyr::mutate(
-        Prediction_Transcriptomics = dplyr::if_else(Transcriptomics_probability_Bad >= .6, 'Predicted - Poor Responder', dplyr::if_else(Transcriptomics_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
-        Prediction_Genomics = dplyr::if_else(WGS_probability_Bad >= .6, 'Predicted - Poor Responder', dplyr::if_else(WGS_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
-        Prediction_WES = dplyr::if_else(WES_probability_Bad >= .5, 'Predicted - Poor Responder', 'Predicted - Good Responder'),
-        Prediction_WES_Ambi = dplyr::if_else(WES_probability_Bad >= .6, 'Predicted - Poor Responder', dplyr::if_else(WES_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
-        Prediction_Clinicogenomics_Ambi = dplyr::if_else(Clinicogenomics_probability_Bad >= .6 | Clinicogenomics_probability_Good >= .6, Prediction_Clinicogenomics, 'Ambiguous Prediction'),
+        Prediction_WTS = dplyr::if_else(Transcriptomics_probability_Poor >= .6, 'Predicted - Poor Responder', dplyr::if_else(Transcriptomics_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
+        Prediction_WTS_Arsi = dplyr::if_else(ClinicoWTS_probability_Poor >= .6, 'Predicted - Poor Responder', dplyr::if_else(ClinicoWTS_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
+        Prediction_Combi = dplyr::if_else(Combi_probability_Poor >= .6, 'Predicted - Poor Responder', dplyr::if_else(Combi_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
+        Prediction_Genomics = dplyr::if_else(WGS_probability_Poor >= .6, 'Predicted - Poor Responder', dplyr::if_else(WGS_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
+        Prediction_WES = dplyr::if_else(WES_probability_Poor >= .5, 'Predicted - Poor Responder', 'Predicted - Good Responder'),
+        Prediction_WES_Ambi = dplyr::if_else(WES_probability_Poor >= .6, 'Predicted - Poor Responder', dplyr::if_else(WES_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
+        Prediction_Clinicogenomics_Ambi = dplyr::if_else(Clinicogenomics_probability_Poor >= .6 | Clinicogenomics_probability_Good >= .6, Prediction_Clinicogenomics, 'Ambiguous Prediction'),
         treatmentStatus = dplyr::if_else(Treatment_Ongoing == 'Yes', 0, 1)
     )
 
@@ -49,22 +51,10 @@ plotFits$clinicogenomics.Three <- plotKM.Treatment(
     ylim = 2550, palette = c('orange', '#8B0000', '#008080')
 )
 
-plotFits$WES.Internal.Two <- plotKM.Treatment(
-    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_WES, data = dataPred),
-    ylim = 2550, palette = c('#8B0000', '#008080')
-)
-
-plotFits$WES.Internal.Three <- plotKM.Treatment(
-    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_WES_Ambi, data = dataPred),
-    ylim = 2550, palette = c('orange', '#8B0000', '#008080')
-)
-
-svglite::svglite(file = 'Fig6_Kaplan.svg', width = 5.5, height = 18)
+svglite::svglite(file = 'Fig6_Kaplan.svg', width = 5.5, height = 8)
 plotFits$clinicogenomics.Two$plot + plotFits$clinicogenomics.Two$table +
     plotFits$clinicogenomics.Three$plot + plotFits$clinicogenomics.Three$table + 
-    plotFits$WES.Internal.Two$plot + plotFits$WES.Internal.Two$table +
-    plotFits$WES.Internal.Three$plot + plotFits$WES.Internal.Three$table +
-    patchwork::plot_layout(ncol = 1, heights = c(1, .15, 1, .25, 1, .15, 1, .25))
+    patchwork::plot_layout(ncol = 1, heights = c(1, .15, 1, .2))
 dev.off()
 
 
@@ -101,22 +91,51 @@ plotFits$clinicogenomics.Group1$plot + plotFits$clinicogenomics.Group2$plot + pl
 dev.off()
 
 
-## WGS/WTS-only models. ----
+## Internal validation models. ----
+
+plotFits$WES.Internal <- plotKM.Treatment(
+    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_WES_Ambi, data = dataPred),
+    ylim = 2550, palette = c('orange', '#008080', '#8B0000')
+)
 
 plotFits$WGS.Internal <- plotKM.Treatment(
     survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_Genomics, data = dataPred),
-    ylim = 2550, palette = c('orange', '#8B0000', '#008080')
+    ylim = 2550, palette = c('orange', '#008080', '#8B0000')
+)
+
+plotFits$ClinicoWGS.Internal <- plotKM.Treatment(
+    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_Clinicogenomics_Ambi, data = dataPred),
+    ylim = 2550, palette = c('orange', '#008080', '#8B0000')
 )
 
 plotFits$WTS.Internal <- plotKM.Treatment(
-    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_Transcriptomics, data = dataPred %>% dplyr::filter(!is.na(dataPred$Transcriptomics_probability_Bad))),
-    ylim = 2550, palette = c('orange', '#8B0000', '#008080')
+    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_WTS, data = dataPred %>% dplyr::filter(!is.na(dataPred$Transcriptomics_probability_Poor))),
+    ylim = 2550, palette = c('orange', '#008080', '#8B0000')
 )
 
-svglite::svglite(file = 'SupplFig6.svg', width = 10.5, height = 5)
-plotFits$WGS.Internal$plot + plotFits$WTS.Internal$plot +
-    plotFits$WGS.Internal$table + plotFits$WTS.Internal$table + 
-    patchwork::plot_layout(ncol = 3, heights = c(1, .25))
+plotFits$ClinicoWTS.Internal <- plotKM.Treatment(
+    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_WTS_Arsi, data = dataPred %>% dplyr::filter(!is.na(dataPred$ClinicoWTS_probability_Poor))),
+    ylim = 2550, palette = c('orange', '#008080', '#8B0000')
+)
+
+plotFits$Combi.Internal <- plotKM.Treatment(
+    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_Combi, data = dataPred %>% dplyr::filter(!is.na(dataPred$Combi_probability_Poor))),
+    ylim = 2550, palette = c('orange', '#008080', '#8B0000')
+)
+
+layout = '
+ACEGIK
+BDFHJL
+'
+
+svglite::svglite(file = 'SupplFig6.svg', width = 30, height = 4.5)
+    plotFits$WGS.Internal$plot + plotFits$WGS.Internal$table +
+    plotFits$ClinicoWGS.Internal$plot + plotFits$ClinicoWGS.Internal$table +
+    plotFits$WTS.Internal$plot + plotFits$WTS.Internal$table +
+    plotFits$ClinicoWTS.Internal$plot + plotFits$ClinicoWTS.Internal$table +
+    plotFits$Combi.Internal$plot + plotFits$Combi.Internal$table +
+    plotFits$WES.Internal$plot + plotFits$WES.Internal$table +
+    patchwork::plot_layout(ncol = 6, heights = c(1, .2), design = layout)
 dev.off()
 
 
@@ -125,7 +144,7 @@ dev.off()
 dataOS <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xls', sheet = 'Predictions', skip = 1, trim_ws = T) %>% 
     dplyr::inner_join(AbiEnza.Metadata, by = 'hmfSampleId') %>% 
     dplyr::mutate(
-        Prediction_Clinicogenomics_Ambi = dplyr::if_else(Clinicogenomics_probability_Bad >= .6 | Clinicogenomics_probability_Good >= .6, Prediction_Clinicogenomics, 'Ambiguous Prediction')
+        Prediction_Clinicogenomics_Ambi = dplyr::if_else(Clinicogenomics_probability_Poor >= .6 | Clinicogenomics_probability_Good >= .6, Prediction_Clinicogenomics, 'Ambiguous Prediction')
     )
 
 plotFits$clinicogenomics.OS.All.True <- plotKM.OS(
