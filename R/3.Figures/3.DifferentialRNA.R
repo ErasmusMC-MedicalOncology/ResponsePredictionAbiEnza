@@ -195,29 +195,3 @@ plots$TreatmentDuration +
     plots$dendro.samples + scale_y_reverse() +
     patchwork::plot_layout(design = layout, guides = 'keep', heights = c(.2, 1, .05, .05, .075), widths = c(1, .2, .11))
 dev.off()
-
-# GSEA ----
-
-svglite::svglite(file = 'SupplFig2a.svg', width = 3.5, height = 3)
-AbiEnza.RNASeq$GSEA %>% 
-    dplyr::filter(padj <= 0.05) %>% 
-    dplyr::arrange(NES) %>% 
-    dplyr::inner_join(read.delim('Misc/pathwayClean.csv', sep = '\t'), by = c('pathway' = 'pathwayOriginal')) %>% 
-    dplyr::distinct(pathwayClean, NES) %>% 
-    dplyr::mutate(
-        pathwayClean = gsub(' \\(Hall.*', ' <sup style="color:#4987BA">(H)</sup>', pathwayClean),
-        pathwayClean = gsub(' \\(Wiki.*', ' <sup style="color:#F17F64">(W)</sup>', pathwayClean)
-    ) %>% 
-    ggplot2::ggplot(aes(x = reorder(pathwayClean, NES), xend = reorder(pathwayClean, NES), yend = 0, y = NES, fill = NES)) +
-    ggplot2::geom_segment() +
-    ggplot2::geom_point(shape = 21, size = 2) +
-    ggplot2::geom_hline(yintercept = 0, lty = '11') +
-    ggplot2::scale_y_continuous(limits = c(-3, 3)) +
-    ggplot2::scale_fill_gradient2(limits = c(-3, 3), breaks = c(-3, 0, 3), low = '#005AB5', mid = 'white', midpoint = 0, high = '#DC3220', guide = ggplot2::guide_colorbar(title = NULL, title.position = 'top', direction = 'horizontal', title.hjust = 0.5, barwidth = 6, barheight = .5)) +
-    ggplot2::scale_alpha_continuous(guide = 'none') +
-    ggplot2::labs(x = 'GSEA (Hallmark & WikiPathways; q ≤ 0.05)', y = 'Normalized Enrichment Score<br>Poor vs. good responders') + 
-    theme_Job + 
-    ggplot2::theme(
-        axis.text.y = ggtext::element_markdown(size = 5)
-    ) + coord_flip()
-dev.off()
