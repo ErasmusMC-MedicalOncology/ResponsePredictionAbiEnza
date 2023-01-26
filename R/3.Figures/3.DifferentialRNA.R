@@ -1,6 +1,6 @@
 # Author:    Job van Riet
-# Date:      05-01-23
-# Function:  Figure of the differential analysis between good vs. poor responders on Abi/Enza-treatment.
+# Date:      26-01-23
+# Function:  Figure of the differential analysis between good vs. poor responders on ARSI-treatment.
 
 # Set seed for reproducibility of t-SNE
 set.seed(708813)
@@ -17,9 +17,9 @@ source('R/3.Figures/misc_Themes.R')
 # Load metadata of the Abi/Enza-treated patients.
 load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
 load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')
+DE.LOOCV <- readRDS('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.LOOCV.Rds')
 
-# Robustness scores of DE-genes.
-dataRobustness <- readr::read_csv('Misc/DE_LOOCV.csv')
+AbiEnza.Metadata <- AbiEnza.Metadata %>% dplyr::mutate(Responder = ifelse(Responder == 'Bad Responder (≤100 days)', 'Poor Responder (≤100 days)', Responder))
 
 # Function to generate Z-scores.
 makeZ <- function (x){
@@ -146,7 +146,7 @@ plots$heatmap <- heatData %>%
     ) %>% 
     ggplot2::ggplot(., ggplot2::aes(x = Var2, y = Var1, fill = value))+
     ggplot2::geom_tile(color = 'grey80') +
-    ggplot2::labs(x = 'Samples', y = 'DEGs (<i>n</i> = 65)') +
+    ggplot2::labs(x = 'Samples', y = 'DEGs (<i>n</i> = 151)') +
     ggplot2::scale_y_discrete(expand=c(0, 0)) +
     ggplot2::scale_fill_gradient2(limits = c(-5, 5), breaks = c(-5, -2.5, 0, 2.5, 5), labels = c('≤5', -2.5, 0, 2.5, '≥5'), low = '#005AB5', mid = 'white', midpoint = 0, high = '#DC3220', guide = ggplot2::guide_colorbar(title = NULL, title.position = 'top', direction = 'vertical', title.hjust = 0.5, barwidth = .75, barheight = 6)) +
     theme_Job +
@@ -159,13 +159,13 @@ plots$heatmap <- heatData %>%
 
 ## Robustness scores. ----
 
-plots$LOOCV <- dataRobustness %>% 
+plots$LOOCV <- DE.LOOCV$DE.LOOCV.Summed %>% 
     dplyr::filter(SYMBOL %in% heatData$Var1) %>% 
     dplyr::mutate(SYMBOL = factor(SYMBOL, levels = levels(heatData$Var1))) %>%
-    tidyr::complete(SYMBOL, fill = list('LOOCV_occurrence' = 0)) %>% 
+    tidyr::complete(SYMBOL, fill = list('totalSig' = 0)) %>% 
     
-    ggplot2::ggplot(., aes(x = LOOCV_occurrence, xend = 0, y = SYMBOL, yend = SYMBOL, fill = LOOCV_occurrence)) +
-    ggplot2::scale_x_continuous(limits = c(0, 120), expand = c(0,0)) +
+    ggplot2::ggplot(., aes(x = totalSig, xend = 0, y = SYMBOL, yend = SYMBOL, fill = totalSig)) +
+    ggplot2::scale_x_continuous(limits = c(0, 80), expand = c(0,0)) +
     
     ggplot2::geom_segment() +
     ggplot2::geom_point(shape = 21, size = 1, fill = 'black') +
@@ -193,5 +193,5 @@ plots$TreatmentDuration +
     plots$Responder + 
     plots$Biopsy +
     plots$dendro.samples + scale_y_reverse() +
-    patchwork::plot_layout(design = layout, guides = 'keep', heights = c(.2, 1, .05, .05, .075), widths = c(1, .2, .11))
+    patchwork::plot_layout(design = layout, guides = 'keep', heights = c(.2, 1, .025, .025, .075), widths = c(1, .2, .11))
 dev.off()
