@@ -14,7 +14,7 @@ load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.RNASeq.RData')
 # Load RNA-Seq of the DR-071 cohort.
 load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/DR71.RNASeq.RData')
 # Retrieve batch-effect genes from the full DR-071 RNA-Seq cohort----
-batchGenes <- DR71.RNASeq$DESeq2Results.BetweenMajorBiopsySite %>% dplyr::filter(isSig)
+batchGenes <- DR71.RNASeq$DESeq2Results.BetweenMajorBiopsySite %>% dplyr::filter(isSig) %>% dplyr::distinct()
 
 
 # Export results --------------------------------------------------------------------------------------------------
@@ -91,7 +91,7 @@ data.ExclMut <- AbiEnza.Results$differencesWGS$mutExcl %>%
 openxlsx::writeDataTable(wb, sheet = 'Mutual Excl Genes', x = data.ExclMut)
 
 ## Batch genes ----
-openxlsx::addWorksheet(wb, sheet = 'Batch genes')
+openxlsx::addWorksheet(wb, 'Batch genes')
 openxlsx::writeDataTable(wb, sheet = 'Batch genes', x = batchGenes)
 
 
@@ -108,17 +108,12 @@ openxlsx::writeDataTable(wb, sheet = 'Results - DESeq2', x = data.DESeq2)
 openxlsx::addWorksheet(wb, sheet = 'Results - GSEA')
 data.GSEA <- AbiEnza.RNASeq$GSEA %>% 
   dplyr::filter(padj <= 0.05) %>% 
-  dplyr::inner_join(read.delim('~/test/pathwayClean.csv', sep = '\t'), by = c('pathway' = 'pathwayOriginal')) %>% 
-  dplyr::arrange(NES) %>% 
+   dplyr::arrange(NES) %>% 
   dplyr::mutate(contrast = 'Bad vs. Good responders', leadingEdge = NULL) %>% 
-  dplyr::select(pathwayClean, pathway, dplyr::everything())
+  dplyr::select(pathway, dplyr::everything())
 
 openxlsx::writeDataTable(wb, sheet = 'Results - GSEA', x = data.GSEA)
 
 # Write to file ---------------------------------------------------------------------------------------------------
 
 openxlsx::saveWorkbook(wb, file = '~/test/AbiEnza.xls', overwrite = T)
-
-write.table(DESeq2::counts(DESeq2Counts.AbiEnza), file = '~/test/AbiEnzaCounts_AllSamples.txt', quote = F, sep = '\t',row.names = T)
-write.table(colData(DESeq2Counts.AbiEnza), file = '~/test/AbiEnzaMetaData.txt', quote = F, sep = '\t',row.names = T)
-write.table(AbiEnza.RNASeq$DESeq2Results %>% dplyr::filter(isSig == 'Significant'), file = '~/test/AbiEnzaDEGs.txt', quote = F, sep = '\t',row.names = F)

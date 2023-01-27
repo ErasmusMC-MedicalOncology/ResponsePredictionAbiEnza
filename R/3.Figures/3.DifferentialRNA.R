@@ -12,7 +12,7 @@ library(DESeq2)
 library(ggplot2)
 
 # Load ggplot2 themes.
-source('R/3.Figures/misc_Themes.R')
+source('3.Figures/misc_Themes.R')
 
 # Load metadata of the Abi/Enza-treated patients.
 load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
@@ -151,7 +151,7 @@ plots$heatmap <- heatData %>%
     ggplot2::scale_fill_gradient2(limits = c(-5, 5), breaks = c(-5, -2.5, 0, 2.5, 5), labels = c('≤5', -2.5, 0, 2.5, '≥5'), low = '#005AB5', mid = 'white', midpoint = 0, high = '#DC3220', guide = ggplot2::guide_colorbar(title = NULL, title.position = 'top', direction = 'vertical', title.hjust = 0.5, barwidth = .75, barheight = 6)) +
     theme_Job +
     ggplot2::theme(
-        text = ggplot2::element_text(size = 7, family='Roboto', face = 'bold'),
+        axis.text.y = ggplot2::element_text(size = 4, family = 'Nimbus Sans', face = 'bold'),
         legend.position = 'right',
         axis.text.x = ggplot2::element_blank(),
         axis.ticks.x = ggplot2::element_blank()
@@ -187,11 +187,11 @@ E##
 F##
 G##'
 
-svglite::svglite(file = 'Fig4.svg', width = 14, height = 9.5)
+svglite::svglite(file = 'Fig4.svg', width = 10, height = 14)
 plots$TreatmentDuration +
     plots$heatmap + plots$logFC + plots$LOOCV +
     plots$Responder + 
     plots$Biopsy +
     plots$dendro.samples + scale_y_reverse() +
-    patchwork::plot_layout(design = layout, guides = 'keep', heights = c(.2, 1, .025, .025, .075), widths = c(1, .2, .11))
+    patchwork::plot_layout(design = layout, guides = 'keep', heights = c(.1, 1, .025, .025, .05), widths = c(1, .2, .11))
 dev.off()

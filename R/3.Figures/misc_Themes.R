@@ -40,7 +40,6 @@ theme_Job <- ggplot2::theme(
   legend.position = 'bottom',
   legend.direction = 'horizontal',
   text = ggplot2::element_text(size=9, family='Nimbus Sans', face = 'bold'),
-  axis.text.x = ggtext::element_markdown(family='Nimbus Sans', face = 'bold'),
   axis.title.x = ggtext::element_textbox_simple(family='Nimbus Sans', face = 'bold', width = NULL, halign = .5),
   axis.title.y = ggtext::element_textbox_simple(family='Nimbus Sans', face = 'bold', size = 8, orientation = 'left-rotated', width = NULL, halign = .5),
   strip.text = ggtext::element_textbox_simple(width = NULL, halign = .5),

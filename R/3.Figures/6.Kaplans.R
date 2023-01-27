@@ -15,10 +15,8 @@ library(patchwork)
 source('R/3.Figures/misc_Themes.R')
 source('R/3.Figures/misc_Functions.R')
 
-
 # Load metadata of the Abi/Enza-treated patients.
 load('/mnt/share1/repository/HMF/DR71/Dec2021/RData/AbiEnza.Metadata.RData')
-
 
 # Read prediction metrics.
 dataPred <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xls', sheet = 'Predictions', skip = 1, trim_ws = T) %>% 
@@ -32,6 +30,7 @@ dataPred <- readxl::read_xlsx('Misc/Suppl. Table 1 - OverviewOfData.xls', sheet 
         Prediction_WES = dplyr::if_else(WES_probability_Poor >= .5, 'Predicted - Poor Responder', 'Predicted - Good Responder'),
         Prediction_WES_Ambi = dplyr::if_else(WES_probability_Poor >= .6, 'Predicted - Poor Responder', dplyr::if_else(WES_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
         Prediction_Clinicogenomics_Ambi = dplyr::if_else(Clinicogenomics_probability_Poor >= .6 | Clinicogenomics_probability_Good >= .6, Prediction_Clinicogenomics, 'Ambiguous Prediction'),
+        Prediction_Ensembl = dplyr::if_else(Ensemble_probability_Poor >= .6, 'Predicted - Poor Responder', dplyr::if_else(Ensemble_probability_Good >= .6, 'Predicted - Good Responder', 'Ambiguous Prediction')),
         treatmentStatus = dplyr::if_else(Treatment_Ongoing == 'Yes', 0, 1)
     )
 
@@ -123,6 +122,11 @@ plotFits$Combi.Internal <- plotKM.Treatment(
     ylim = 2550, palette = c('orange', '#008080', '#8B0000')
 )
 
+plotFits$Ensembl <- plotKM.Treatment(
+    survminer::surv_fit(formula = survival::Surv(treatmentduration_days, treatmentStatus) ~ Prediction_Ensembl, data = dataPred %>% dplyr::filter(!is.na(dataPred$Ensemble_probability_Poor))),
+    ylim = 2550, palette = c('orange', '#008080', '#8B0000')
+)
+
 layout = '
 ACEGIK
 BDFHJL
@@ -134,10 +138,13 @@ svglite::svglite(file = 'SupplFig6.svg', width = 30, height = 4.5)
     plotFits$WTS.Internal$plot + plotFits$WTS.Internal$table +
     plotFits$ClinicoWTS.Internal$plot + plotFits$ClinicoWTS.Internal$table +
     plotFits$Combi.Internal$plot + plotFits$Combi.Internal$table +
-    plotFits$WES.Internal$plot + plotFits$WES.Internal$table +
+    plotFits$Ensembl$plot + plotFits$Ensembl$table +
     patchwork::plot_layout(ncol = 6, heights = c(1, .2), design = layout)
 dev.off()
 
+svglite::svglite(file = 'Fig8_ModelsWES.svg', width = 5, height = 4.5)
+plotFits$WES.Internal$plot + plotFits$WES.Internal$table 
+dev.off()
 
 ## ClinicoGenomics (OS) ----
 
