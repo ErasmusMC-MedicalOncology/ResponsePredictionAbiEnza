@@ -22,13 +22,12 @@ source('R/3.Figures/misc_Themes.R')
 plot.GSEA <- AbiEnza.RNASeq$GSEA %>% 
     dplyr::filter(padj <= 0.05) %>% 
     dplyr::arrange(NES) %>% 
-    dplyr::inner_join(read.delim('Misc/pathwayClean.csv', sep = '\t'), by = c('pathway' = 'pathwayOriginal')) %>% 
-    dplyr::distinct(pathwayClean, NES) %>% 
+    dplyr::distinct(pathway, NES) %>% 
     dplyr::mutate(
-        pathwayClean = gsub(' \\(Hall.*', ' <sup style="color:#4987BA">(H)</sup>', pathwayClean),
+        pathwayClean = gsub(' \\(Hall.*', ' <sup style="color:#4987BA">(H)</sup>', pathway),
         pathwayClean = gsub(' \\(Wiki.*', ' <sup style="color:#F17F64">(W)</sup>', pathwayClean)
     ) %>% 
-    ggplot2::ggplot(aes(x = reorder(pathwayClean, NES), xend = reorder(pathwayClean, NES), yend = 0, y = NES, fill = NES)) +
+    ggplot2::ggplot(ggplot2::aes(x = reorder(pathwayClean, NES), xend = reorder(pathwayClean, NES), yend = 0, y = NES, fill = NES)) +
     ggplot2::geom_segment() +
     ggplot2::geom_point(shape = 21, size = 2) +
     ggplot2::geom_hline(yintercept = 0, lty = '11') +
@@ -38,8 +37,8 @@ plot.GSEA <- AbiEnza.RNASeq$GSEA %>%
     ggplot2::labs(x = 'GSEA<br>(Hallmark & WikiPathways; <i>q</i> ≤ 0.05)', y = 'Normalized Enrichment Score<br>Poor vs. Good responders') + 
     theme_Job + 
     ggplot2::theme(
-        axis.text.y = ggtext::element_markdown(size = 8)
-    ) + coord_flip()
+        axis.text.y = ggtext::element_markdown(size = 6, family = 'Nimbus Sans', face = 'bold')
+    ) + ggplot2::coord_flip()
 
 
 # Visualize and test AR-V7 expression. ----
@@ -70,6 +69,6 @@ plot.ARv <- ggplot2::ggplot(AR.PSI, ggplot2::aes(x = reorder(Responder, -median)
     ggplot2::theme(panel.grid.minor.y = ggplot2::element_blank())
 
 
-svglite::svglite(file = 'SupplFig2.svg', width = 9, height = 5)
+svglite::svglite(file = 'SupplFig2.svg', width = 9, height = 7.5)
     plot.GSEA + plot.ARv + patchwork::plot_layout(widths = c(1, 1.25)) + patchwork::plot_annotation(tag_levels = 'a')
 dev.off()
